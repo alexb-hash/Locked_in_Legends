@@ -477,7 +477,8 @@ function PlayerStage({
                 </motion.p>
               )}
             </motion.div>
-          </motion.div>
+          </motion.section>
+
         </AnimatePresence>
 
         {/* Controls */}
