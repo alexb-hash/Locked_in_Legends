@@ -707,7 +707,7 @@ function LeaguesShowcase() {
                   const t = TROPHIES[tier]!;
                   const offsets = ["", "sm:translate-y-6", "sm:-translate-y-3", "sm:translate-y-4", "", "sm:translate-y-7"];
                   return (
-                    <RevealItem key={tier} className={offsets[i % offsets.length]}>
+                    <RevealItem key={tier} className={offsets[i % offsets.length] ?? ""}>
                       <Floaty amount={5} delay={i * 0.35}>
                         <div className="flex flex-col items-center gap-2">
                           <div
