@@ -159,8 +159,11 @@ function WatchPage() {
     const map = new Map<number, Question>();
     if (!total || questions.length === 0) return map;
     questions.forEach((q, i) => {
-      const at = Math.min(total - 1, Math.round(((i + 1) * total) / questions.length) - 1);
-      map.set(at, q);
+      let at = Math.min(total - 1, Math.round(((i + 1) * total) / questions.length) - 1);
+      // Never drop a question by overwriting a slot: shift it to the next free scene, then backwards.
+      while (map.has(at) && at < total - 1) at += 1;
+      while (map.has(at) && at > 0) at -= 1;
+      if (!map.has(at)) map.set(at, q);
     });
     return map;
   }, [questions, total]);
