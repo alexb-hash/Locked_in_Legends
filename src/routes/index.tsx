@@ -612,7 +612,6 @@ function Landing() {
         <HeroPreview />
       </section>
 
-      <CoverShelf />
       <HowItWorks />
       <SusuSpotlight />
       <LeaguesShowcase />
