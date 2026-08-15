@@ -398,6 +398,68 @@ function CreatePage() {
                     Name each character and add reference photos so they look consistent across the series.
                   </p>
 
+                  {!loadingCast && savedChars.length > 0 && (
+                    <div className="mt-5 rounded-2xl border border-border/60 bg-background/40 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold">Your saved cast</p>
+                        <Button asChild variant="ghost" size="sm" className="press rounded-xl text-xs">
+                          <Link to="/cast">Manage</Link>
+                        </Button>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Tap to load characters you already made into this series.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {savedChars.map((c) => {
+                          const on = pickedIds.includes(c.id);
+                          return (
+                            <button
+                              key={c.id}
+                              type="button"
+                              aria-pressed={on}
+                              onClick={() =>
+                                setPickedIds((prev) => (on ? prev.filter((x) => x !== c.id) : [...prev, c.id]))
+                              }
+                              className={cn(
+                                "press flex items-center gap-2 rounded-2xl border px-2.5 py-2 text-left transition-colors",
+                                on
+                                  ? "border-primary/60 bg-primary/15"
+                                  : "border-border/60 bg-background/50 hover:border-primary/40",
+                              )}
+                            >
+                              {c.image ? (
+                                <img
+                                  src={c.image}
+                                  alt={c.name}
+                                  className="size-8 rounded-xl object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <span className="grid size-8 place-items-center rounded-xl bg-primary/20 text-[11px] font-bold text-primary">
+                                  {c.name.slice(0, 1).toUpperCase()}
+                                </span>
+                              )}
+                              <span className="min-w-0">
+                                <span className="block truncate text-xs font-semibold">{c.name}</span>
+                                {c.role && (
+                                  <span className="block max-w-[9rem] truncate text-[11px] text-muted-foreground">
+                                    {c.role}
+                                  </span>
+                                )}
+                              </span>
+                              {on && <Check className="size-3.5 text-primary" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Add new characters
+                  </p>
+
+
                   <div className="mt-5 space-y-3">
                     {cast.map((row) => (
                       <div key={row.key} className="rounded-2xl border border-border/60 bg-background/40 p-4">
