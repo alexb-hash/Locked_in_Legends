@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 import { Ambience } from "@/components/motion/Ambience";
-import { Floaty, Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
+import { Floaty, RevealItem, ScrollReveal, ScrollRevealGroup } from "@/components/motion/Reveal";
 import { StudlyLogo } from "@/components/brand/StudlyLogo";
 import { Markdown } from "@/components/chat/Markdown";
 import { Button } from "@/components/ui/button";
@@ -183,13 +183,13 @@ const SHELF = [
 function CoverShelf() {
   return (
     <section className="relative mx-auto w-full max-w-6xl px-5 pb-8 sm:px-8">
-      <Reveal>
+      <ScrollReveal>
         <div className="flex items-baseline justify-between">
           <h2 className="font-display text-xl font-semibold sm:text-2xl">Studly Originals</h2>
           <span className="text-sm text-muted-foreground">Trending this season</span>
         </div>
-      </Reveal>
-      <Reveal delay={0.1} className="mt-4">
+      </ScrollReveal>
+      <ScrollReveal delay={0.1} className="mt-4">
         <div className="-mx-5 flex gap-4 overflow-x-auto px-5 pb-4 sm:-mx-8 sm:px-8 [scrollbar-width:thin]">
           {SHELF.map((s) => (
             <div
@@ -220,7 +220,7 @@ function CoverShelf() {
             </div>
           ))}
         </div>
-      </Reveal>
+      </ScrollReveal>
     </section>
   );
 }
@@ -275,41 +275,59 @@ const STEPS = [
     body: "Episodes auto-generate with a cinematic player, pop-up quizzes, and captions. Then quiz, flashcards, and Susu take over.",
     icons: [Clapperboard],
     mock: (
-      <div className="glass-card relative aspect-[16/9] overflow-hidden p-0">
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(circle at 30% 30%, oklch(0.63 0.115 300 / 0.3), transparent 60%), var(--color-surface-2)",
-          }}
-        />
-        <div className="relative flex h-full items-center justify-center">
-          <span className="grid size-12 place-items-center rounded-full bg-white/15 backdrop-blur-md ring-1 ring-white/30">
-            <Play className="size-5 fill-white text-white" />
-          </span>
-        </div>
-        <p className="absolute bottom-3 left-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          Episode 1
-        </p>
+      <div className="relative mx-auto h-52 w-full max-w-sm sm:h-56">
+        {[
+          { label: "Episode 3", rot: -7, x: -26, y: 16, z: 10, hue: 200, scale: 0.9, blur: true },
+          { label: "Episode 2", rot: 4, x: 18, y: 8, z: 20, hue: 320, scale: 0.95, blur: true },
+          { label: "Episode 1", rot: -1, x: 0, y: -10, z: 30, hue: 300, scale: 1, blur: false },
+        ].map((card) => (
+          <div
+            key={card.label}
+            className="absolute inset-x-0 top-1/2 mx-auto aspect-[16/9] w-[88%] overflow-hidden rounded-2xl ring-1 ring-border shadow-[0_20px_50px_-20px_rgba(0,0,0,0.7)]"
+            style={{
+              zIndex: card.z,
+              transform: `translateY(calc(-50% + ${card.y}px)) translateX(${card.x}px) rotate(${card.rot}deg) scale(${card.scale})`,
+            }}
+          >
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `radial-gradient(circle at 30% 30%, oklch(0.63 0.115 ${card.hue} / 0.35), transparent 60%), var(--color-surface-2)`,
+                filter: card.blur ? "blur(1.5px) brightness(0.75)" : undefined,
+              }}
+            />
+            {!card.blur && (
+              <div className="relative flex h-full items-center justify-center">
+                <span className="grid size-12 place-items-center rounded-full bg-white/15 backdrop-blur-md ring-1 ring-white/30">
+                  <Play className="size-5 fill-white text-white" />
+                </span>
+              </div>
+            )}
+            <p className="absolute bottom-3 left-3 text-[0.65rem] font-semibold uppercase tracking-widest text-muted-foreground">
+              {card.label}
+            </p>
+          </div>
+        ))}
       </div>
     ),
+
   },
 ];
 
 function HowItWorks() {
   return (
     <section className="relative mx-auto w-full max-w-5xl px-5 py-20 sm:px-8">
-      <Reveal className="text-center">
+      <ScrollReveal className="text-center">
         <h2 className="font-display text-2xl font-bold sm:text-3xl">From notes to a season in 3 steps</h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
           No setup, no editing software. Just your study material and a press of a button.
         </p>
-      </Reveal>
+      </ScrollReveal>
       <div className="mt-12 space-y-16">
         {STEPS.map((step, i) => {
           const flip = i % 2 === 1;
           return (
-            <Reveal key={step.n}>
+            <ScrollReveal key={step.n}>
               <div className="grid items-center gap-6 sm:grid-cols-2 sm:gap-10">
                 <div className={flip ? "sm:order-2" : ""}>
                   <div className="mb-3 flex items-center gap-3">
@@ -322,7 +340,7 @@ function HowItWorks() {
                 </div>
                 <div className={flip ? "sm:order-1" : ""}>{step.mock}</div>
               </div>
-            </Reveal>
+            </ScrollReveal>
           );
         })}
       </div>
@@ -340,7 +358,7 @@ function SusuSpotlight() {
   return (
     <section className="relative mx-auto w-full max-w-5xl px-5 py-20 sm:px-8">
       <div className="grid items-center gap-8 sm:grid-cols-2 sm:gap-12">
-        <Reveal>
+        <ScrollReveal>
           <span className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary ring-1 ring-primary/30">
             <Sparkles className="size-3.5" /> Susu
           </span>
@@ -354,9 +372,9 @@ function SusuSpotlight() {
             <li>• Generates flashcard decks on request</li>
             <li>• Follows up straight from a wrong quiz answer</li>
           </ul>
-        </Reveal>
+        </ScrollReveal>
         <Floaty amount={7}>
-          <Reveal delay={0.1}>
+          <ScrollReveal delay={0.1}>
             <div className="glass-card glow-ring mx-auto max-w-md p-5">
               <div className="flex items-center gap-2 border-b border-border pb-3">
                 <span className="grid size-7 place-items-center rounded-full bg-primary/15 text-primary ring-1 ring-primary/30">
@@ -371,7 +389,7 @@ function SusuSpotlight() {
                 <Markdown content={SUSU_SAMPLE} />
               </div>
             </div>
-          </Reveal>
+          </ScrollReveal>
         </Floaty>
       </div>
     </section>
@@ -385,14 +403,14 @@ function SusuSpotlight() {
 function LeaguesShowcase() {
   return (
     <section className="relative mx-auto w-full max-w-6xl px-5 py-20 sm:px-8">
-      <Reveal className="text-center">
+      <ScrollReveal className="text-center">
         <h2 className="font-display text-2xl font-bold sm:text-3xl">Two-week seasons. Promotion is the goal.</h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
           Climb six tiers, keep your streak lit, and finish the season in the top three.
         </p>
-      </Reveal>
+      </ScrollReveal>
 
-      <RevealGroup className="mt-10 flex flex-wrap items-end justify-center gap-4 sm:gap-6">
+      <ScrollRevealGroup className="mt-10 flex flex-wrap items-end justify-center gap-4 sm:gap-6">
         {LEAGUE_TIERS.map((tier, i) => {
           const t = TROPHIES[tier]!;
           return (
@@ -419,9 +437,9 @@ function LeaguesShowcase() {
             </RevealItem>
           );
         })}
-      </RevealGroup>
+      </ScrollRevealGroup>
 
-      <Reveal delay={0.15} className="mt-8 flex flex-wrap items-center justify-center gap-3">
+      <ScrollReveal delay={0.15} className="mt-8 flex flex-wrap items-center justify-center gap-3">
         <div className="glass-card flex items-center gap-2 px-4 py-2">
           <Flame className="size-4 text-gold" />
           <span className="text-sm font-semibold">5-day streak</span>
@@ -441,7 +459,7 @@ function LeaguesShowcase() {
           </span>
           <span className="text-sm text-muted-foreground">2,110 XP</span>
         </div>
-      </Reveal>
+      </ScrollReveal>
     </section>
   );
 }
@@ -453,7 +471,7 @@ function LeaguesShowcase() {
 function FinalCta() {
   return (
     <section className="relative mx-auto w-full max-w-4xl px-5 py-24 sm:px-8">
-      <Reveal>
+      <ScrollReveal>
         <div className="glass-card glow-ring relative overflow-hidden px-6 py-12 text-center sm:px-12">
           <Ambience density={10} intensity="soft" />
           <div className="relative">
@@ -472,7 +490,7 @@ function FinalCta() {
             </div>
           </div>
         </div>
-      </Reveal>
+      </ScrollReveal>
     </section>
   );
 }
@@ -518,13 +536,13 @@ function Landing() {
       </header>
 
       <section className="relative mx-auto w-full max-w-3xl px-5 pt-16 pb-10 text-center sm:px-8 sm:pt-24">
-        <Reveal>
+        <ScrollReveal>
           <h1 className="font-sans text-3xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
             Make studying <span className="text-gradient">hit different.</span>
           </h1>
-        </Reveal>
+        </ScrollReveal>
         <RotatingSubtitle />
-        <Reveal delay={0.24}>
+        <ScrollReveal delay={0.24}>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Button asChild size="lg" className="cta-studio cta-sheen press h-12 rounded-full px-7 text-sm font-semibold">
               <Link to="/signup">Create your first series</Link>
@@ -533,7 +551,7 @@ function Landing() {
               <Link to="/login">I already study here</Link>
             </Button>
           </div>
-        </Reveal>
+        </ScrollReveal>
 
         <HeroPreview />
       </section>
