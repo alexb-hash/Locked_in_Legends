@@ -705,15 +705,23 @@ function PlayerStage({
     if (elapsed >= duration - FRAME_MS) endScene();
   }, [active, duration, elapsed, endScene, narrationDone]);
 
-  // Safety net: if the voice engine never reports back (no voices, blocked autoplay, a dropped
-  // utterance), the scene must still finish instead of hanging on the last frame forever.
+  // Safety net: if the voice engine never reports back, hand narration to the deterministic word
+  // clock. Never mark the lesson complete on a timer while audible speech may still be running.
   useEffect(() => {
     if (!script || narrationDone || !armed || !active) return;
     const budget = splitWords(script.slice(narrationStart)).reduce(
       (sum, w) => sum + estimateWordMs(w.text, Math.min(2, 0.98 * rate)) + 40,
       0,
     );
-    const timer = window.setTimeout(() => setNarrationDone(true), budget + 8000);
+    const timer = window.setTimeout(() => {
+      if (!activeRef.current || narrationDone) return;
+      speechRun.current += 1;
+      window.speechSynthesis?.cancel();
+      spokenWord.current = null;
+      setSpeaking(false);
+      setNarrationStart((current) => Math.max(current, spokenCharRef.current));
+      setSpeechFailed(true);
+    }, budget + 8000);
     return () => window.clearTimeout(timer);
   }, [active, armed, narrationDone, narrationStart, rate, script]);
 
