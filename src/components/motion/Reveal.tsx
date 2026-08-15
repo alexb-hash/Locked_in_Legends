@@ -1,7 +1,45 @@
 import { motion, useInView, type HTMLMotionProps } from "motion/react";
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+
+/* ------------------------------------------------------------------ */
+/* Pre-hydration safety                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The motion runtime only takes over once the client bundle has hydrated. If
+ * the server-rendered markup starts at opacity 0 / clipped, the page looks
+ * empty for as long as that takes. So the very first paint renders plain,
+ * visible markup with a CSS-only entrance (`reveal-css`), and JS-driven
+ * reveals are reserved for components mounted after hydration (client
+ * navigations, conditional UI).
+ */
+let appHydrated = false;
+
+function useStaticFirstPaint() {
+  const isStatic = useRef(!appHydrated);
+  useEffect(() => {
+    appHydrated = true;
+  }, []);
+  return isStatic.current;
+}
+
+function StaticReveal({
+  children,
+  className,
+  delay = 0,
+}: {
+  children: ReactNode;
+  className?: string | undefined;
+  delay?: number | undefined;
+}) {
+  return (
+    <div className={cn("reveal-css", className)} style={{ animationDelay: `${delay}s` }}>
+      {children}
+    </div>
+  );
+}
 
 type RevealProps = {
   children: ReactNode;
@@ -17,6 +55,14 @@ type RevealProps = {
  * even when the intersection observer never fires during a route transition.
  */
 export function Reveal({ children, delay = 0, className, y = 18, once: _once, ...rest }: RevealProps) {
+  const isStatic = useStaticFirstPaint();
+  if (isStatic) {
+    return (
+      <StaticReveal className={className} delay={delay}>
+        {children}
+      </StaticReveal>
+    );
+  }
   return (
     <motion.div
       initial={{ opacity: 0, filter: "blur(14px)", y }}
@@ -42,6 +88,8 @@ export function RevealGroup({
   stagger?: number;
   delay?: number;
 }) {
+  const isStatic = useStaticFirstPaint();
+  if (isStatic) return <div className={cn(className)}>{children}</div>;
   return (
     <motion.div
       initial="hidden"
@@ -58,6 +106,8 @@ export function RevealGroup({
 }
 
 export function RevealItem({ children, className }: { children: ReactNode; className?: string }) {
+  const isStatic = useStaticFirstPaint();
+  if (isStatic) return <StaticReveal className={className}>{children}</StaticReveal>;
   return (
     <motion.div
       variants={{
@@ -103,6 +153,14 @@ export function Floaty({
 
 /** Blur-in reveal that fires when the block scrolls into view (once). */
 export function ScrollReveal({ children, delay = 0, className, y = 28, once = true, ...rest }: RevealProps) {
+  const isStatic = useStaticFirstPaint();
+  if (isStatic) {
+    return (
+      <StaticReveal className={className} delay={delay}>
+        {children}
+      </StaticReveal>
+    );
+  }
   return (
     <motion.div
       initial={{ opacity: 0, filter: "blur(16px)", y }}
@@ -129,6 +187,8 @@ export function ScrollRevealGroup({
   stagger?: number;
   delay?: number;
 }) {
+  const isStatic = useStaticFirstPaint();
+  if (isStatic) return <div className={cn(className)}>{children}</div>;
   return (
     <motion.div
       initial="hidden"
@@ -167,6 +227,7 @@ export function MaskReveal({
   from?: "bottom" | "left" | "right";
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const isStatic = useStaticFirstPaint();
   const inView = useInView(ref, { once: true, amount: 0.1, margin: "0px 0px -8% 0px" });
 
   const hidden =
@@ -175,6 +236,14 @@ export function MaskReveal({
       : from === "right"
         ? { x: "100%", y: 0, opacity: 0 }
         : { x: 0, y: "100%", opacity: 0 };
+
+  if (isStatic) {
+    return (
+      <div className={cn("overflow-hidden", className)}>
+        <StaticReveal delay={delay}>{children}</StaticReveal>
+      </div>
+    );
+  }
 
   return (
     <div ref={ref} className={cn("overflow-hidden", className)}>
@@ -202,6 +271,8 @@ export function MaskRevealGroup({
   stagger?: number;
   delay?: number;
 }) {
+  const isStatic = useStaticFirstPaint();
+  if (isStatic) return <div className={cn(className)}>{children}</div>;
   return (
     <motion.div
       initial="hidden"
@@ -216,6 +287,8 @@ export function MaskRevealGroup({
 }
 
 export function MaskItem({ children, className }: { children: ReactNode; className?: string }) {
+  const isStatic = useStaticFirstPaint();
+  if (isStatic) return <StaticReveal className={className}>{children}</StaticReveal>;
   return (
     <motion.div
       variants={{
@@ -243,7 +316,28 @@ export function WordReveal({
   /** Words from this index onward get the gradient accent treatment. */
   accentFrom?: number;
 }) {
+  const isStatic = useStaticFirstPaint();
   const words = text.split(" ");
+
+  if (isStatic) {
+    return (
+      <span className={cn("inline-flex flex-wrap justify-center gap-x-[0.28em]", className)}>
+        {words.map((word, i) => (
+          <span
+            key={`${word}-${i}`}
+            className={cn(
+              "reveal-css inline-block py-[0.06em]",
+              accentFrom !== undefined && i >= accentFrom && "text-gradient",
+            )}
+            style={{ animationDelay: `${delay + i * 0.06}s` }}
+          >
+            {word}
+          </span>
+        ))}
+      </span>
+    );
+  }
+
   return (
     <motion.span
       initial="hidden"
