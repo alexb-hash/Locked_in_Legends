@@ -29,7 +29,7 @@ type NavItem = {
   key: string;
   label: string;
   icon: ComponentType<{ className?: string }>;
-  to?: "/home" | "/profile" | "/episodes" | "/leagues";
+  to?: "/home" | "/profile" | "/episodes" | "/leagues" | "/create" | "/cast" | "/chat";
   soon?: boolean;
 };
 
@@ -37,8 +37,8 @@ const NAV: NavItem[] = [
   { key: "home", label: "Home", icon: LayoutGrid, to: "/home" },
   { key: "episodes", label: "Episodes", icon: ListChecks, to: "/episodes" },
   { key: "flashcards", label: "Flashcards", icon: Layers, soon: true },
-  { key: "create", label: "Create", icon: PlusCircle, soon: true },
-  { key: "cast", label: "Cast", icon: Users, soon: true },
+  { key: "create", label: "Create", icon: PlusCircle, to: "/create" },
+  { key: "cast", label: "Cast", icon: Users, to: "/cast" },
   { key: "leagues", label: "Leagues", icon: Trophy, to: "/leagues" },
   { key: "profile", label: "Profile", icon: User, to: "/profile" },
 ];
@@ -98,15 +98,18 @@ export function AppSidebar() {
 
         <div className={cn("px-3 pt-5", collapsed && "px-2")}>
           <Button
-            onClick={() => toast("Susu is warming up — arriving in the next phase.")}
+            asChild
             className={cn(
               "press glow-ring h-11 w-full justify-center gap-2 rounded-2xl bg-primary/90 text-sm font-semibold hover:bg-primary",
               collapsed && "px-0",
             )}
           >
-            <Sparkles className="size-4 shrink-0" />
-            {!collapsed && "Talk to Susu"}
+            <Link to="/chat" search={{ q: undefined, ctx: undefined }}>
+              <Sparkles className="size-4 shrink-0" />
+              {!collapsed && "Talk to Susu"}
+            </Link>
           </Button>
+
         </div>
 
         <nav className="mt-6 flex-1 space-y-1 overflow-y-auto px-3 pb-4">

@@ -3,10 +3,10 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Check, Flame, Sparkles, Timer, Trophy, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 
 import { Ambience } from "@/components/motion/Ambience";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,10 +36,26 @@ type Question = {
   order_index: number;
   prompt: string;
   options: unknown;
-  correct_index: number;
+  correct_index: number | null;
   explanation: string;
   seconds: number;
+  kind: string;
+  answer_text: string | null;
 };
+
+/** Lenient grading for typed answers: case, spacing and trailing punctuation are ignored. */
+export function gradeWritten(input: string, expected: string | null) {
+  const norm = (v: string) =>
+    v
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  const a = norm(input);
+  const b = norm(expected ?? "");
+  if (!a || !b) return false;
+  return a === b || a.includes(b) || b.includes(a);
+}
 
 function asStrings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
@@ -70,7 +86,7 @@ function WatchPage() {
           .order("order_index", { ascending: true }),
         supabase
           .from("episode_questions")
-          .select("id, order_index, prompt, options, correct_index, explanation, seconds")
+          .select("id, order_index, prompt, options, correct_index, explanation, seconds, kind, answer_text")
           .eq("episode_id", episodeId)
           .order("order_index", { ascending: true }),
       ]);
@@ -154,8 +170,8 @@ function WatchPage() {
     else void finish();
   }
 
-  async function handleAnswer(question: Question, selected: number | null, ms: number) {
-    const correct = selected === question.correct_index;
+  async function handleAnswer(question: Question, answer: { index: number | null; text: string | null }, correct: boolean, ms: number) {
+    const selected = answer.index;
     if (correct) {
       const res = await awardXp("quiz_correct", XP.correctAnswer, `q:${question.id}`);
       setEarned((prev) => prev + res.awarded);
@@ -175,10 +191,10 @@ function WatchPage() {
         episode_id: episodeId,
         question_id: question.id,
         question_text: question.prompt,
-        selected_answer: selected === null ? null : asStrings(question.options)[selected] ?? null,
+        selected_answer: answer.text ?? (selected === null ? null : asStrings(question.options)[selected] ?? null),
         is_correct: correct,
         time_taken_ms: ms,
-        timed_out: selected === null,
+        timed_out: selected === null && !answer.text,
       });
     }
   }
@@ -289,8 +305,8 @@ function WatchPage() {
           <QuizPopup
             key={quiz.id}
             question={quiz}
-            onDone={async (selected, ms) => {
-              await handleAnswer(quiz, selected, ms);
+            onDone={async (answer, correct, ms) => {
+              await handleAnswer(quiz, answer, correct, ms);
             }}
             onClose={() => {
               setQuiz(null);
@@ -310,24 +326,33 @@ function QuizPopup({
   onClose,
 }: {
   question: Question;
-  onDone: (selected: number | null, ms: number) => Promise<void>;
+  onDone: (answer: { index: number | null; text: string | null }, correct: boolean, ms: number) => Promise<void>;
   onClose: () => void;
 }) {
+  const written = question.kind === "written";
   const options = asStrings(question.options);
   const [remaining, setRemaining] = useState(question.seconds);
   const [selected, setSelected] = useState<number | null>(null);
+  const [typed, setTyped] = useState("");
+  const [submitted, setSubmitted] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const [correct, setCorrect] = useState(false);
   const started = useRef(Date.now());
 
   const settle = useCallback(
-    (choice: number | null) => {
+    (answer: { index: number | null; text: string | null }) => {
       if (revealed) return;
-      setSelected(choice);
+      const isCorrect = written
+        ? Boolean(answer.text) && gradeWritten(answer.text!, question.answer_text)
+        : answer.index !== null && answer.index === question.correct_index;
+      setSelected(answer.index);
+      setSubmitted(answer.text);
+      setCorrect(isCorrect);
       setRevealed(true);
-      pop(choice === question.correct_index ? "correct" : "wrong");
-      void onDone(choice, Date.now() - started.current);
+      pop(isCorrect ? "correct" : "wrong");
+      void onDone(answer, isCorrect, Date.now() - started.current);
     },
-    [onDone, question.correct_index, revealed],
+    [onDone, question.answer_text, question.correct_index, revealed, written],
   );
 
   useEffect(() => {
@@ -336,7 +361,7 @@ function QuizPopup({
       setRemaining((r) => {
         if (r <= 1) {
           window.clearInterval(timer);
-          settle(null);
+          settle({ index: null, text: null });
           return 0;
         }
         return r - 1;
@@ -346,6 +371,9 @@ function QuizPopup({
   }, [revealed, settle]);
 
   const pct = (remaining / question.seconds) * 100;
+  const susuQuestion = `I got this quiz question wrong: "${question.prompt}". ${
+    written ? `I answered "${submitted ?? "nothing"}".` : `I picked "${selected !== null ? options[selected] : "nothing"}".`
+  } Can you help me understand it?`;
 
   return (
     <motion.div
@@ -363,45 +391,70 @@ function QuizPopup({
       >
         <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-primary">
           <span className="flex items-center gap-1.5">
-            <Sparkles className="size-3.5" /> Pop quiz
+            <Sparkles className="size-3.5" /> {written ? "Written pop quiz" : "Pop quiz"}
           </span>
-          <span className={cn("flex items-center gap-1.5", remaining <= 5 && !revealed && "text-destructive")}>
+          <span className={cn("flex items-center gap-1.5 tabular-nums", remaining <= 5 && !revealed && "text-destructive")}>
             <Timer className="size-3.5" /> {remaining}s
           </span>
         </div>
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
           <div
-            className={cn("h-full rounded-full bg-primary transition-[width] duration-1000 ease-linear", remaining <= 5 && "bg-destructive")}
+            className={cn(
+              "h-full rounded-full bg-primary transition-[width] duration-1000 ease-linear",
+              remaining <= 5 && "bg-destructive",
+            )}
             style={{ width: `${pct}%` }}
           />
         </div>
 
         <h2 className="mt-5 font-display text-xl font-semibold leading-snug">{question.prompt}</h2>
 
-        <div className="mt-5 space-y-2.5">
-          {options.map((opt, i) => {
-            const isCorrect = i === question.correct_index;
-            const isPicked = i === selected;
-            return (
-              <button
-                key={opt}
-                type="button"
-                disabled={revealed}
-                onClick={() => settle(i)}
-                className={cn(
-                  "press flex w-full items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/50 px-4 py-3 text-left text-sm font-medium transition-colors",
-                  !revealed && "hover:border-primary/50 hover:bg-primary/10",
-                  revealed && isCorrect && "border-primary bg-primary/15 text-primary",
-                  revealed && isPicked && !isCorrect && "border-destructive bg-destructive/15 text-destructive",
-                )}
-              >
-                {opt}
-                {revealed && isCorrect && <Check className="size-4 shrink-0" />}
-                {revealed && isPicked && !isCorrect && <X className="size-4 shrink-0" />}
-              </button>
-            );
-          })}
-        </div>
+        {written ? (
+          <form
+            className="mt-5 flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (typed.trim()) settle({ index: null, text: typed.trim() });
+            }}
+          >
+            <Input
+              autoFocus
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              disabled={revealed}
+              placeholder="Type your answer"
+              className="h-11 rounded-2xl"
+            />
+            <Button type="submit" className="press h-11 shrink-0 rounded-2xl" disabled={revealed || !typed.trim()}>
+              Submit
+            </Button>
+          </form>
+        ) : (
+          <div className="mt-5 space-y-2.5">
+            {options.map((opt, i) => {
+              const isCorrect = i === question.correct_index;
+              const isPicked = i === selected;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  disabled={revealed}
+                  onClick={() => settle({ index: i, text: opt })}
+                  className={cn(
+                    "press flex w-full items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/50 px-4 py-3 text-left text-sm font-medium transition-colors",
+                    !revealed && "hover:border-primary/50 hover:bg-primary/10",
+                    revealed && isCorrect && "border-primary bg-primary/15 text-primary",
+                    revealed && isPicked && !isCorrect && "border-destructive bg-destructive/15 text-destructive",
+                  )}
+                >
+                  {opt}
+                  {revealed && isCorrect && <Check className="size-4 shrink-0" />}
+                  {revealed && isPicked && !isCorrect && <X className="size-4 shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {revealed && (
           <motion.div
@@ -410,21 +463,26 @@ function QuizPopup({
             className="mt-5 rounded-2xl border border-border/60 bg-background/50 p-4"
           >
             <p className="text-sm font-semibold">
-              {selected === null
-                ? "Time's up"
-                : selected === question.correct_index
-                  ? `Correct · +${XP.correctAnswer} XP`
+              {correct
+                ? `Correct · +${XP.correctAnswer} XP`
+                : selected === null && !submitted
+                  ? "Time's up"
                   : "Not quite"}
             </p>
+            {written && !correct && question.answer_text && (
+              <p className="mt-1.5 text-sm">
+                The answer was <span className="font-semibold text-primary">{question.answer_text}</span>.
+              </p>
+            )}
             <p className="mt-1.5 text-sm text-muted-foreground">{question.explanation}</p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <Button
-                variant="outline"
-                className="press h-10 flex-1 rounded-2xl"
-                onClick={() => toast("Susu will walk you through this in the next phase.")}
-              >
-                <Sparkles className="mr-1.5 size-4" /> Ask Susu
-              </Button>
+              {!correct && (
+                <Button asChild variant="outline" className="press h-10 flex-1 rounded-2xl">
+                  <Link to="/chat" search={{ q: susuQuestion, ctx: `Question: ${question.prompt}\nCorrect answer explanation: ${question.explanation}` }}>
+                    <Sparkles className="mr-1.5 size-4" /> Ask Susu
+                  </Link>
+                </Button>
+              )}
               <Button className="press h-10 flex-1 rounded-2xl" onClick={onClose}>
                 Keep watching
               </Button>
