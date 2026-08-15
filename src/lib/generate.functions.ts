@@ -262,5 +262,5 @@ export const buildEpisode = createServerFn({ method: "POST" })
       await supabase.from("series").update({ status: "ready" }).eq("id", job.series_id);
     }
 
-    return { index: data.index, title: episode.title, done, total, complete, seriesId: job.series_id };
+    return { index: data.index, title: episode.title, done, total, complete, seriesId: job.series_id, episodeId: episode.id };
   });
