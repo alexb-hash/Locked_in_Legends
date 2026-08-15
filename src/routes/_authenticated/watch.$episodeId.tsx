@@ -392,10 +392,14 @@ function WatchPage() {
 function slideDuration(slide: Slide | undefined) {
   if (!slide) return 6000;
   const bullets = asStrings(slide.bullets);
-  const words = (slide.title + " " + bullets.join(" ") + " " + (slide.takeaway ?? ""))
-    .trim()
-    .split(/\s+/).length;
-  return Math.min(26000, Math.max(6500, 2600 + words * 380));
+  const script = [slide.title, ...bullets, slide.takeaway ?? ""].filter(Boolean).join(". ");
+  const spokenMs = splitWords(script).reduce(
+    (sum, word) => sum + estimateWordMs(word.text, 0.98) + 40,
+    0,
+  );
+  // Size each scene from its complete spoken lesson. There is deliberately no upper cap: long
+  // teaching material must keep the broadcast clock and presenter alive until its final word.
+  return Math.max(6500, 1800 + spokenMs);
 }
 
 /** Broadcast frame rate: 60fps, i.e. one frame every ~16.67ms. */
@@ -596,15 +600,15 @@ function PlayerStage({
       if (steps > 0) {
         carry -= steps * FRAME_MS;
         const next = elapsedRef.current + steps * FRAME_MS;
-        if (next >= duration) {
+        if (next >= duration && !narrating.current) {
           elapsedRef.current = duration;
           setElapsed(duration);
-          // Hold the cut open while the script is still being read so nothing gets clipped.
-          if (!narrating.current) {
-            endScene();
-            return;
-          }
+          endScene();
+          return;
         } else {
+          // If the real browser voice runs longer than its estimate, keep advancing beyond the
+          // planned cut. This keeps the timer, captions and 60fps presenter motion running instead
+          // of freezing on the last frame while audio continues.
           elapsedRef.current = next;
           setElapsed(next);
         }
@@ -620,6 +624,8 @@ function PlayerStage({
   const frameTime = frame * FRAME_MS;
   const globalFrame = Math.floor((before + elapsed) / FRAME_MS);
   const progress = duration ? Math.min(1, frameTime / duration) : 0;
+  const overtime = Math.max(0, elapsed - duration);
+  const displayedTotalMs = totalMs + overtime;
 
   /** Camera move, evaluated per frame so it stays locked to the playhead (even when scrubbing). */
   const camera = useMemo(() => {
@@ -647,10 +653,7 @@ function PlayerStage({
    */
   const scriptLines = useMemo(() => {
     if (!slide) return [] as { text: string; start: number; end: number }[];
-    const introduction = index === 0 && presenter?.name
-      ? `I'm ${presenter.name}`
-      : "";
-    const parts = [introduction, slide.title, ...bullets, slide.takeaway ?? ""]
+    const parts = [slide.title, ...bullets, slide.takeaway ?? ""]
       .map((p) => p?.trim())
       .filter(Boolean) as string[];
     const out: { text: string; start: number; end: number }[] = [];
@@ -660,7 +663,7 @@ function PlayerStage({
       cursor += part.length + 2; // joined with ". "
     }
     return out;
-  }, [bullets, index, presenter?.name, slide]);
+  }, [bullets, slide]);
   const script = useMemo(() => scriptLines.map((l) => l.text).join(". "), [scriptLines]);
   /** Read by the seek handler, which runs outside render. */
   const scriptRef = useRef(script);
