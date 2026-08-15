@@ -53,41 +53,45 @@ export async function generateImage(prompt: string, references: string[] = []): 
 }
 
 export const STYLE =
-  "Stylised semi-realistic digital illustration, cinematic dark studio, deep charcoal backdrop, " +
-  "soft muted violet rim light, gentle film grain, painterly but clean, no text, no words, no letters, no watermark.";
+  "Photorealistic studio portrait photography, natural human skin texture with realistic pores and subsurface detail, " +
+  "cinematic dark studio, deep charcoal backdrop, soft muted violet rim light, 85mm lens, shallow depth of field, " +
+  "true-to-life proportions, no cartoon or anime stylisation, no plastic or waxy skin, no text, no words, no letters, no watermark.";
 
 /** Pose prompts for the talking cycle. Each is generated against the master sheet so the face never drifts. */
 export const POSES: { kind: string; prompt: string }[] = [
   {
     kind: "mouth_closed",
-    prompt: "Same character, identical face, hair, outfit, pose and lighting. Lips gently closed, calm attentive expression, eyes open.",
+    prompt: "Same person, identical face, age, hair, outfit, pose and lighting. Lips gently closed, calm attentive expression, eyes open.",
   },
   {
     kind: "mouth_mid",
-    prompt: "Same character, identical face, hair, outfit, pose and lighting. Mouth slightly open mid-sentence as if pronouncing 'eh', teeth barely visible, eyes open.",
+    prompt:
+      "Same person, identical face, age, hair, outfit, pose and lighting. Lips parted just a little mid-sentence, a natural conversational speaking shape, jaw barely lowered, eyes open.",
   },
   {
     kind: "mouth_open",
-    prompt: "Same character, identical face, hair, outfit, pose and lighting. Mouth clearly open in an 'ah' shape as if speaking a vowel, animated engaged expression, eyes open.",
+    prompt:
+      "Same person, identical face, age, hair, outfit, pose and lighting. Mouth open in a natural relaxed speaking vowel, jaw only slightly lowered as in normal conversation — not a wide yawn, not shouting, not chewing. Eyes open.",
   },
   {
     kind: "blink",
-    prompt: "Same character, identical face, hair, outfit, pose and lighting. Eyes fully closed in a natural mid-blink, lips gently closed.",
+    prompt: "Same person, identical face, age, hair, outfit, pose and lighting. Eyes fully closed in a natural mid-blink, lips gently closed.",
   },
   {
     kind: "gesture",
-    prompt: "Same character, identical face, hair, outfit and lighting. One hand raised in an explaining gesture, mouth slightly open, enthusiastic teaching energy.",
+    prompt: "Same person, identical face, age, hair, outfit and lighting. One hand raised in an explaining gesture, lips slightly parted, engaged teaching energy.",
   },
 ];
 
 /** Builds the master character sheet prompt for a cast member. */
 export function masterPrompt(name: string, role: string | null | undefined, hasReference: boolean) {
   return [
-    `Character design for an animated educational broadcast: ${name}, a warm, charismatic on-camera teacher.`,
+    `Photorealistic portrait of an on-camera teacher for an educational broadcast: ${name}, warm and charismatic.`,
     role ? `Role: ${role}.` : "",
     hasReference
-      ? "Use the attached photo only as a likeness reference for face structure, hair and skin tone — do not copy or collage the photo, draw an original illustrated character inspired by it. Match the apparent age in the photo exactly: if they look young, keep them young. Smooth youthful skin, no wrinkles, no eye bags, no grey hair, no beard or stubble unless clearly present in the photo, no aging or maturing of the face."
-      : "Invent an appealing original character design of a young adult teacher.",
+      ? "Use the attached photo as the likeness reference for face structure, features, hair, skin tone and body type — recreate the same person as a realistic studio photograph rather than copying or collaging the source pixels. " +
+        "Estimate their age from the photo and reproduce it exactly: do not age them up, do not youthify them, keep the same facial maturity, hairline, facial hair and skin condition as in the reference — no added wrinkles, eye bags, grey hair or stubble, and no smoothing away features they actually have."
+      : "Create a realistic portrait of an original young adult teacher.",
     "Waist-up centred framing, facing the camera, tidy modern outfit, neutral closed-mouth expression, eyes open.",
     "Portrait 3:4 composition with generous headroom.",
     STYLE,
