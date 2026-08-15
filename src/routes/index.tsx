@@ -93,9 +93,9 @@ function Landing() {
         </nav>
       </header>
 
-      <section className="relative mx-auto w-full max-w-4xl px-5 pt-20 pb-10 text-center sm:px-8 sm:pt-32">
+      <section className="relative mx-auto w-full max-w-3xl px-5 pt-20 pb-10 text-center sm:px-8 sm:pt-28">
         <Reveal>
-          <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
+          <h1 className="font-sans text-3xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
             Make studying <span className="text-gradient">hit different.</span>
           </h1>
         </Reveal>
