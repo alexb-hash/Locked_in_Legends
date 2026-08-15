@@ -377,6 +377,8 @@ function PlayerStage({
   const hideTimer = useRef<number | null>(null);
   const barRef = useRef<HTMLDivElement | null>(null);
   const pendingElapsed = useRef<number | null>(null);
+  /** True while the scene's script is still being read — the cut is held open until it finishes. */
+  const narrating = useRef(true);
 
   const slide = slides[index];
   const durations = useMemo(() => slides.map(slideDuration), [slides]);
@@ -440,6 +442,8 @@ function PlayerStage({
         setElapsed((prev) => {
           const next = prev + steps * FRAME_MS;
           if (next >= duration) {
+            // Hold the cut open while the script is still being read so nothing gets clipped.
+            if (narrating.current) return duration;
             onEnded();
             return duration;
           }
@@ -478,47 +482,72 @@ function PlayerStage({
 
   const showTakeaway = frameTime > duration * 0.72;
 
-  /** Subtitle line that follows the playhead. */
-  const caption = useMemo(() => {
-    if (!slide) return "";
-    if (frameTime < duration * 0.18) return slide.title;
-    if (showTakeaway && slide.takeaway) return slide.takeaway;
-    return bullets[Math.max(0, revealed - 1)] ?? slide.title;
-  }, [bullets, duration, frameTime, revealed, showTakeaway, slide]);
-
   /**
-   * The presenter speaks the script line the playhead is on. Real word-boundary events drive the
-   * mouth, so articulation matches the words being read. With voice muted the same words are walked
-   * at an estimated reading pace.
+   * The whole scene script, spoken as one continuous take. Narration is keyed to the scene — never
+   * to the caption — so changing captions can no longer cut the voice off mid-sentence.
    */
+  const scriptLines = useMemo(() => {
+    if (!slide) return [] as { text: string; start: number; end: number }[];
+    const parts = [slide.title, ...bullets, slide.takeaway ?? ""].map((p) => p?.trim()).filter(Boolean) as string[];
+    const out: { text: string; start: number; end: number }[] = [];
+    let cursor = 0;
+    for (const part of parts) {
+      out.push({ text: part, start: cursor, end: cursor + part.length });
+      cursor += part.length + 2; // joined with ". "
+    }
+    return out;
+  }, [bullets, slide]);
+  const script = useMemo(() => scriptLines.map((l) => l.text).join(". "), [scriptLines]);
+
+  /** Character offset the voice has reached, so subtitles follow the words actually being read. */
+  const [spokenChar, setSpokenChar] = useState(0);
+  /** True once the full scene script has been read out — the cut cannot end before this. */
+  const [narrationDone, setNarrationDone] = useState(false);
+  narrating.current = Boolean(script) && !narrationDone;
+
   const spokenWord = useRef<{ text: string; start: number; dur: number } | null>(null);
+
+  useEffect(() => {
+    setSpokenChar(0);
+    setNarrationDone(false);
+  }, [script]);
+
+  // The playhead can reach the end of the cut before the script finishes; once the last word is
+  // read, move on immediately so nothing is ever cut off mid-sentence.
+  useEffect(() => {
+    if (!active || !narrationDone) return;
+    if (elapsed >= duration - FRAME_MS) onEnded();
+  }, [active, duration, elapsed, narrationDone, onEnded]);
 
   useEffect(() => {
     const synth = typeof window === "undefined" ? null : window.speechSynthesis;
     const speechRate = Math.min(2, 0.98 * rate);
     spokenWord.current = null;
-    if (!active || !caption) {
+    if (!active || !script) {
       synth?.cancel();
       setSpeaking(false);
       return;
     }
 
-    // Muted: walk the line's words on an estimated clock so the mouth still matches the text.
+    // Muted: walk the whole script's words on an estimated clock so the mouth still matches text.
     if (!voiceOn || !synth) {
       setSpeaking(true);
-      const words = splitWords(caption);
+      const words = splitWords(script);
       let i = 0;
       let timer = 0;
       const step = () => {
         const word = words[i];
         if (!word) {
           spokenWord.current = null;
+          setNarrationDone(true);
+          setSpeaking(false);
           return;
         }
         const dur = estimateWordMs(word.text, speechRate);
         spokenWord.current = { text: word.text, start: performance.now(), dur };
+        setSpokenChar(word.index);
         i += 1;
-        timer = window.setTimeout(step, dur + 60);
+        timer = window.setTimeout(step, dur + 40);
       };
       step();
       return () => {
@@ -528,24 +557,27 @@ function PlayerStage({
     }
 
     synth.cancel();
-    const utter = new SpeechSynthesisUtterance(caption);
+    const utter = new SpeechSynthesisUtterance(script);
     utter.rate = speechRate;
     utter.pitch = 1.02;
     utter.onstart = () => setSpeaking(true);
     utter.onboundary = (event) => {
       if (event.name && event.name !== "word") return;
-      const rest = caption.slice(event.charIndex);
+      const rest = script.slice(event.charIndex);
       const text = (event.charLength ? rest.slice(0, event.charLength) : rest.split(/\s/)[0]) ?? "";
       if (!text.trim()) return;
       spokenWord.current = { text, start: performance.now(), dur: estimateWordMs(text, speechRate) };
+      setSpokenChar(event.charIndex);
     };
     utter.onend = () => {
       spokenWord.current = null;
       setSpeaking(false);
+      setNarrationDone(true);
     };
     utter.onerror = () => {
       spokenWord.current = null;
       setSpeaking(false);
+      setNarrationDone(true);
     };
     synth.speak(utter);
     return () => {
@@ -553,9 +585,19 @@ function PlayerStage({
       spokenWord.current = null;
       setSpeaking(false);
     };
-  }, [active, caption, rate, voiceOn]);
+  }, [active, script, rate, voiceOn]);
 
   useEffect(() => () => window.speechSynthesis?.cancel(), []);
+
+  /** Subtitle line: the sentence being read, falling back to the playhead before speech starts. */
+  const caption = useMemo(() => {
+    if (!slide) return "";
+    const spoken = scriptLines.find((l) => spokenChar >= l.start && spokenChar <= l.end);
+    if (spoken) return spoken.text;
+    if (frameTime < duration * 0.18) return slide.title;
+    if (showTakeaway && slide.takeaway) return slide.takeaway;
+    return bullets[Math.max(0, revealed - 1)] ?? slide.title;
+  }, [bullets, duration, frameTime, revealed, scriptLines, showTakeaway, slide, spokenChar]);
 
   /** Mouth openness for the current frame, derived from the word actually being spoken. */
   const mouth = useMemo(() => {
