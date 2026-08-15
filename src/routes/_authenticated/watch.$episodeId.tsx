@@ -1046,7 +1046,7 @@ function QuizPopup({
       if (settled.current) return;
       settled.current = true;
       const isCorrect = written
-        ? Boolean(answer.text) && gradeWritten(answer.text, question.answer_text)
+        ? gradeWritten(answer.text ?? "", question.answer_text)
         : answer.index !== null && answer.index === question.correct_index;
       setSelected(answer.index);
       setSubmitted(answer.text);
