@@ -1,5 +1,5 @@
-import { motion, type HTMLMotionProps } from "motion/react";
-import type { ReactNode } from "react";
+import { motion, useInView, type HTMLMotionProps } from "motion/react";
+import { useRef, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -166,6 +166,9 @@ export function MaskReveal({
   delay?: number;
   from?: "bottom" | "left" | "right";
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, amount: 0.15 });
+
   const hidden =
     from === "left"
       ? { clipPath: "inset(0% 100% 0% 0%)", opacity: 0, x: -18, y: 0 }
@@ -175,13 +178,9 @@ export function MaskReveal({
 
   return (
     <motion.div
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, amount: 0.2 }}
-      variants={{
-        hidden,
-        show: { clipPath: "inset(0% 0% 0% 0%)", opacity: 1, x: 0, y: 0 },
-      }}
+      ref={ref}
+      initial={hidden}
+      animate={inView ? { clipPath: "inset(0% 0% 0% 0%)", opacity: 1, x: 0, y: 0 } : hidden}
       transition={{ duration: 0.9, delay, ease: MASK_EASE }}
       className={cn(className)}
     >
