@@ -216,14 +216,31 @@ function CreatePage() {
       setStage("Painting the cover art");
       void makeCover({ data: { seriesId: plan.seriesId, title: plan.title, topic: topic.trim() } }).catch(() => {});
 
+      // Draw the cast: uploaded photos are references only — every pose the student sees is generated.
+      const castIds = savedCast.map((c) => c.id).filter((id): id is string => Boolean(id));
+      if (castIds.length) {
+        setStage("Drawing the cast");
+        void Promise.all(
+          castIds.map((characterId) => makeCast({ data: { characterId, seriesId: plan.seriesId } }).catch(() => null)),
+        );
+      }
+
+      const episodeIds: string[] = [];
       for (let i = 0; i < plan.episodeTitles.length; i += 1) {
         const res = await build({ data: { jobId: plan.jobId, index: i, topic: topic.trim(), cast: savedCast } });
+        if (res.episodeId) episodeIds.push(res.episodeId);
         setDoneCount(res.done);
         setProgress(Math.round(18 + (res.done / res.total) * 82));
       }
 
+      setStage("Painting the scenes");
+      void Promise.all(
+        episodeIds.map((episodeId) => makeScenes({ data: { episodeId, topic: topic.trim() } }).catch(() => null)),
+      );
+
       setStage("Final cut delivered");
       setProgress(100);
+
       toast.success("Your series is ready");
     } catch (error) {
       setRunning(false);
