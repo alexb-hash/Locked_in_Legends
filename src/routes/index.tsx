@@ -21,7 +21,11 @@ import {
 import castIris from "@/assets/cast/cast-iris.webp.asset.json";
 import castLex from "@/assets/cast/cast-lex.webp.asset.json";
 import castMo from "@/assets/cast/cast-mo.jpeg.asset.json";
+import presenterClosed from "@/assets/presenter-demo-closed.jpg";
+import presenterMid from "@/assets/presenter-demo-mid.jpg";
+import presenterOpen from "@/assets/presenter-demo-open.jpg";
 import sceneBackdrop from "@/assets/scene-demo-backdrop.jpg";
+import { mouthForWord, splitWords } from "@/lib/viseme";
 import { Ambience } from "@/components/motion/Ambience";
 import {
   Floaty,
@@ -129,6 +133,16 @@ function HeroPreview() {
   const camScale = 1.06 + Math.sin(f / 225) * 0.03;
   const camX = Math.sin(f / 300) * 8;
 
+  // Demo mouth: walk the caption's words on the 60fps clock so the lips match the line on screen.
+  const demoMouth = (() => {
+    const words = splitWords(caption);
+    if (words.length === 0) return 0;
+    const perWord = 22; // frames per word at 60fps
+    const i = Math.floor((f / perWord) % words.length);
+    const p = ((f % perWord) / perWord) * 1.25;
+    return p > 1 ? 0 : mouthForWord(words[i]!.text, p);
+  })();
+
   return (
     <Floaty className="mt-28 sm:mt-40" amount={10}>
       <div
@@ -153,7 +167,14 @@ function HeroPreview() {
           {/* two-column broadcast: presenter left, lesson right */}
           <div className="relative grid h-full grid-cols-[26%_1fr] gap-3 p-4 sm:gap-5 sm:p-6">
             {/* Same broadcast anchor component as the player, so the demo motion matches. */}
-            <PresenterStage frames={{}} name="Susu" speaking frame={tick} className="aspect-[3/4] self-end" />
+            <PresenterStage
+              frames={{ mouth_closed: presenterClosed, mouth_mid: presenterMid, mouth_open: presenterOpen }}
+              name="Susu"
+              speaking
+              mouth={demoMouth}
+              frame={tick}
+              className="aspect-[3/4] self-end"
+            />
 
             <div className="flex flex-col justify-center gap-2">
               <p className="text-[0.6rem] font-semibold uppercase tracking-widest text-primary sm:text-xs">

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -18,12 +18,15 @@ export function PresenterStage({
   frames,
   name,
   speaking,
+  mouth,
   frame,
   className,
 }: {
   frames: PresenterFrames;
   name: string;
   speaking: boolean;
+  /** Mouth openness 0..1 derived from the word currently being spoken. */
+  mouth?: number;
   frame: number;
   className?: string;
 }) {
@@ -49,12 +52,12 @@ export function PresenterStage({
     transform: `translate3d(${(drift * 0.22).toFixed(3)}%, ${(breath * -0.16 * activity).toFixed(3)}%, 0) rotate(${(settle * 0.12).toFixed(3)}deg) scale(${(1.035 + breath * 0.0018 * activity).toFixed(4)})`,
   };
 
-  // Smooth syllable envelope (~3.2 syllables/s) modulated by a slow phrase contour, so pauses and
-  // emphasis feel natural instead of a metronome. Always continuous — never a step function.
-  const syllable = (Math.sin(t * 20.1) + 1) / 2;
-  const phrase = (Math.sin(t * 1.13 + 0.4) + Math.sin(t * 0.47 + 2.2)) / 2;
-  const gate = Math.max(0, Math.min(1, 0.62 + phrase * 0.55));
-  const env = speaking ? Math.pow(syllable, 1.6) * gate : 0;
+  // Openness comes from the spoken word; it is only low-pass filtered so the jaw has physical
+  // inertia rather than snapping between letters.
+  const smoothed = useRef(0);
+  const target = speaking ? Math.max(0, Math.min(1, mouth ?? 0)) : 0;
+  smoothed.current += (target - smoothed.current) * 0.28;
+  const env = smoothed.current;
   const mouthOpacity = (level: number) =>
     Math.max(0, Math.min(1, (env - level) / 0.42)).toFixed(3);
 
