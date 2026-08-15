@@ -95,15 +95,25 @@ function HomePage() {
               </p>
               <Progress value={(levelXp / 500) * 100} className="mt-5 h-2 bg-surface-2" />
               <div className="mt-6 flex flex-wrap gap-2">
-                <Button asChild className="press glow-ring h-11 rounded-2xl px-5">
+                <Button
+                  asChild
+                  className="press cta-studio cta-sheen h-11 gap-2 rounded-2xl px-5 font-semibold hover:brightness-110"
+                >
+                  <Link to="/create">
+                    <Clapperboard className="relative z-[2] size-4" />
+                    <span className="relative z-[2]">Create a series</span>
+                  </Link>
+                </Button>
+                <Button asChild variant="secondary" className="press h-11 rounded-2xl px-5">
                   <Link to="/episodes">
                     <PlayCircle className="mr-1.5 size-4" /> Start an episode
                   </Link>
                 </Button>
-                <Button asChild variant="secondary" className="press h-11 rounded-2xl px-5">
+                <Button asChild variant="ghost" className="press h-11 rounded-2xl px-5">
                   <Link to="/leagues">View league</Link>
                 </Button>
               </div>
+
             </div>
             <Floaty className="shrink-0">
               <div className="grid size-28 place-items-center rounded-full bg-primary/15 ring-1 ring-primary/30">
