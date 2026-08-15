@@ -17,6 +17,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthenticatedCastRouteImport } from './routes/_authenticated/cast'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
+import { Route as AuthenticatedCreateRouteImport } from './routes/_authenticated/create'
 import { Route as AuthenticatedEpisodesRouteImport } from './routes/_authenticated/episodes'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedLeaguesRouteImport } from './routes/_authenticated/leagues'
@@ -63,6 +64,11 @@ const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCreateRoute = AuthenticatedCreateRouteImport.update({
+  id: '/create',
+  path: '/create',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedEpisodesRoute = AuthenticatedEpisodesRouteImport.update({
   id: '/episodes',
   path: '/episodes',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/cast': typeof AuthenticatedCastRoute
   '/chat': typeof AuthenticatedChatRoute
+  '/create': typeof AuthenticatedCreateRoute
   '/episodes': typeof AuthenticatedEpisodesRoute
   '/home': typeof AuthenticatedHomeRoute
   '/leagues': typeof AuthenticatedLeaguesRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/cast': typeof AuthenticatedCastRoute
   '/chat': typeof AuthenticatedChatRoute
+  '/create': typeof AuthenticatedCreateRoute
   '/episodes': typeof AuthenticatedEpisodesRoute
   '/home': typeof AuthenticatedHomeRoute
   '/leagues': typeof AuthenticatedLeaguesRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_authenticated/cast': typeof AuthenticatedCastRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
+  '/_authenticated/create': typeof AuthenticatedCreateRoute
   '/_authenticated/episodes': typeof AuthenticatedEpisodesRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/leagues': typeof AuthenticatedLeaguesRoute
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/cast'
     | '/chat'
+    | '/create'
     | '/episodes'
     | '/home'
     | '/leagues'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/cast'
     | '/chat'
+    | '/create'
     | '/episodes'
     | '/home'
     | '/leagues'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_authenticated/cast'
     | '/_authenticated/chat'
+    | '/_authenticated/create'
     | '/_authenticated/episodes'
     | '/_authenticated/home'
     | '/_authenticated/leagues'
@@ -259,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/create': {
+      id: '/_authenticated/create'
+      path: '/create'
+      fullPath: '/create'
+      preLoaderRoute: typeof AuthenticatedCreateRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/episodes': {
       id: '/_authenticated/episodes'
       path: '/episodes'
@@ -307,6 +326,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCastRoute: typeof AuthenticatedCastRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
+  AuthenticatedCreateRoute: typeof AuthenticatedCreateRoute
   AuthenticatedEpisodesRoute: typeof AuthenticatedEpisodesRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedLeaguesRoute: typeof AuthenticatedLeaguesRoute
@@ -318,6 +338,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCastRoute: AuthenticatedCastRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
+  AuthenticatedCreateRoute: AuthenticatedCreateRoute,
   AuthenticatedEpisodesRoute: AuthenticatedEpisodesRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedLeaguesRoute: AuthenticatedLeaguesRoute,

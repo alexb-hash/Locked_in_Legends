@@ -107,7 +107,10 @@ function CreatePage() {
   async function pasteFromClipboard() {
     try {
       const text = await navigator.clipboard.readText();
-      if (!text) return toast.error("Your clipboard is empty.");
+      if (!text) {
+        toast.error("Your clipboard is empty.");
+        return;
+      }
       const el = notesRef.current;
       const at = el?.selectionStart ?? notes.length;
       setNotes(notes.slice(0, at) + text + notes.slice(at));
