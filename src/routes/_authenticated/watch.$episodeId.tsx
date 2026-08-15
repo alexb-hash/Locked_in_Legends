@@ -928,10 +928,20 @@ function PlayerStage({
             />
 
             <div className="min-w-0 flex-1 origin-left will-change-transform" style={camera}>
-              <p className="text-[clamp(0.6rem,1.1vw,0.8rem)] font-semibold uppercase tracking-[0.2em] text-primary">
+              <p className={cn(
+                "font-semibold uppercase tracking-[0.2em] text-primary",
+                fullscreen
+                  ? "text-[clamp(0.85rem,1.4vw,1.25rem)]"
+                  : "text-[clamp(0.6rem,1.1vw,0.8rem)]",
+              )}>
                 Scene {Math.min(index + 1, slides.length)}
               </p>
-              <h1 className="mt-3 font-display text-[clamp(1.2rem,2.9vw,2.3rem)] font-bold leading-[1.1] tracking-tight">
+              <h1 className={cn(
+                "mt-3 font-display font-bold leading-[1.1] tracking-tight",
+                fullscreen
+                  ? "text-[clamp(1.6rem,3.6vw,3.6rem)]"
+                  : "text-[clamp(1.2rem,2.9vw,2.3rem)]",
+              )}>
                 {slide?.title ?? "Loading…"}
               </h1>
               <ul className="mt-[3%] space-y-[1.6%]">
@@ -945,7 +955,12 @@ function PlayerStage({
                         : { opacity: 0, y: 14, filter: "blur(6px)" }
                     }
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="flex gap-3 text-[clamp(0.75rem,1.3vw,1rem)] leading-relaxed text-foreground/90"
+                    className={cn(
+                      "flex gap-3 leading-relaxed text-foreground/90",
+                      fullscreen
+                        ? "gap-4 text-[clamp(1rem,1.9vw,1.7rem)]"
+                        : "gap-3 text-[clamp(0.75rem,1.3vw,1rem)]",
+                    )}
                   >
                     <span className="mt-[0.7em] size-1.5 shrink-0 rounded-full bg-primary" />
                     {b}
@@ -957,7 +972,12 @@ function PlayerStage({
                   initial={false}
                   animate={showTakeaway ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
                   transition={{ duration: 0.5 }}
-                  className="mt-[3.5%] inline-block rounded-2xl border border-primary/25 bg-primary/10 p-[1.4%] px-4 text-[clamp(0.7rem,1.2vw,0.9rem)] font-medium text-primary"
+                  className={cn(
+                    "mt-[3.5%] inline-block rounded-2xl border border-primary/25 bg-primary/10 p-[1.4%] px-4 font-medium text-primary",
+                    fullscreen
+                      ? "text-[clamp(1rem,1.6vw,1.4rem)]"
+                      : "text-[clamp(0.7rem,1.2vw,0.9rem)]",
+                  )}
                 >
                   Takeaway · {slide.takeaway}
                 </motion.p>
@@ -974,7 +994,12 @@ function PlayerStage({
               uiVisible || !playing ? "bottom-24" : "bottom-10",
             )}
           >
-            <p className="max-w-[80%] rounded-xl bg-black/65 px-3 py-1.5 text-center text-[clamp(0.75rem,1.3vw,1rem)] font-medium leading-snug text-white backdrop-blur-sm">
+            <p className={cn(
+              "max-w-[80%] rounded-xl bg-black/65 px-3 py-1.5 text-center font-medium leading-snug text-white backdrop-blur-sm",
+              fullscreen
+                ? "text-[clamp(1rem,1.6vw,1.5rem)]"
+                : "text-[clamp(0.75rem,1.3vw,1rem)]",
+            )}>
               {caption}
             </p>
           </div>
