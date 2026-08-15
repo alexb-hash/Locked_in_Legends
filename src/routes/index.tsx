@@ -127,7 +127,8 @@ function HeroPreview() {
   // 12fps drawn cadence for the mouth, blink beat every ~2.5s.
   const revealed = Math.min(PREVIEW_SLIDE.bullets.length, Math.floor(progress * (PREVIEW_SLIDE.bullets.length + 1)));
   const caption =
-    PREVIEW_SLIDE.captions[Math.min(PREVIEW_SLIDE.captions.length - 1, Math.max(0, revealed - 1))]!;
+    PREVIEW_SLIDE.captions[Math.min(PREVIEW_SLIDE.captions.length - 1, Math.max(0, revealed - 1))] ??
+    PREVIEW_SLIDE.captions[0]!;
 
   // Slow camera push on the generated backdrop, computed per frame like the player.
   const camScale = 1.06 + Math.sin(f / 225) * 0.03;
@@ -138,10 +139,14 @@ function HeroPreview() {
     const words = splitWords(caption);
     if (words.length === 0) return 0;
     const perWord = 22; // frames per word at 60fps
-    const i = Math.floor((f / perWord) % words.length);
-    const p = ((f % perWord) / perWord) * 1.25;
-    return p > 1 ? 0 : mouthForWord(words[i]!.text, p);
+    const safeF = Number.isFinite(f) && f > 0 ? f : 0;
+    const i = Math.abs(Math.floor(safeF / perWord)) % words.length;
+    const word = words[i];
+    if (!word) return 0;
+    const p = ((safeF % perWord) / perWord) * 1.25;
+    return p > 1 ? 0 : mouthForWord(word.text, p);
   })();
+
 
   return (
     <Floaty className="mt-28 sm:mt-40" amount={10}>
