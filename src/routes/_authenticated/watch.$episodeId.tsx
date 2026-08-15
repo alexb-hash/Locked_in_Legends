@@ -955,7 +955,12 @@ function PlayerStage({
                         : { opacity: 0, y: 14, filter: "blur(6px)" }
                     }
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="flex gap-3 text-[clamp(0.75rem,1.3vw,1rem)] leading-relaxed text-foreground/90"
+                    className={cn(
+                      "flex gap-3 leading-relaxed text-foreground/90",
+                      fullscreen
+                        ? "gap-4 text-[clamp(1rem,1.9vw,1.7rem)]"
+                        : "gap-3 text-[clamp(0.75rem,1.3vw,1rem)]",
+                    )}
                   >
                     <span className="mt-[0.7em] size-1.5 shrink-0 rounded-full bg-primary" />
                     {b}
