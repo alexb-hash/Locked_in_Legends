@@ -14,6 +14,10 @@ import {
   Users,
 } from "lucide-react";
 
+import presenterClosed from "@/assets/presenter-demo-closed.jpg";
+import presenterMid from "@/assets/presenter-demo-mid.jpg";
+import presenterOpen from "@/assets/presenter-demo-open.jpg";
+import sceneBackdrop from "@/assets/scene-demo-backdrop.jpg";
 import { Ambience } from "@/components/motion/Ambience";
 import { Floaty, RevealItem, ScrollReveal, ScrollRevealGroup } from "@/components/motion/Reveal";
 import { StudlyLogo } from "@/components/brand/StudlyLogo";
@@ -70,26 +74,49 @@ const PREVIEW_SLIDE = {
     "More energy demand means more mitochondria",
   ],
   takeaway: "Structure follows the energy bill.",
+  captions: [
+    "So think of ATP as the cell's spendable cash…",
+    "…and those folds? They buy more counter space.",
+    "Which means: busy cells simply carry more of them.",
+  ],
 };
 
+const PRESENTER_POSES = [presenterClosed, presenterMid, presenterOpen, presenterMid];
+
+/**
+ * Mirrors the real player: one 24fps broadcast clock drives the pose cycle,
+ * the caption line, the bullet reveals and the camera drift — nothing is clicked.
+ */
 function HeroPreview() {
-  const [revealed, setRevealed] = useState(0);
-  const [progress, setProgress] = useState(0); // 0..1
+  const [tick, setTick] = useState(0); // frames on the 24fps grid
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     if (paused) return;
-    const total = 9; // seconds for the loop
-    const start = Date.now();
-    const id = setInterval(() => {
-      const t = ((Date.now() - start) / 1000) % total;
-      setProgress(t / total);
-      // reveal bullets progressively
-      setRevealed(Math.min(PREVIEW_SLIDE.bullets.length, Math.floor((t / total) * (PREVIEW_SLIDE.bullets.length + 2))));
-      if (t > total - 0.05) setRevealed(0);
-    }, 120);
-    return () => clearInterval(id);
+    let raf = 0;
+    const start = performance.now();
+    const loop = (now: number) => {
+      setTick(Math.floor((now - start) / (1000 / 24)));
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
   }, [paused]);
+
+  const LOOP = 24 * 9; // 9 second loop
+  const f = tick % LOOP;
+  const progress = f / LOOP;
+
+  // 12fps drawn cadence for the mouth, blink beat every ~2.5s.
+  const blinking = f % 60 > 55;
+  const pose = PRESENTER_POSES[Math.floor(f / 2) % PRESENTER_POSES.length]!;
+  const revealed = Math.min(PREVIEW_SLIDE.bullets.length, Math.floor(progress * (PREVIEW_SLIDE.bullets.length + 1)));
+  const caption =
+    PREVIEW_SLIDE.captions[Math.min(PREVIEW_SLIDE.captions.length - 1, Math.max(0, revealed - 1))]!;
+
+  // Slow camera push on the generated backdrop, computed per frame like the player.
+  const camScale = 1.06 + Math.sin(f / 90) * 0.03;
+  const camX = Math.sin(f / 120) * 8;
 
   return (
     <Floaty className="mt-28 sm:mt-40" amount={10}>
@@ -99,55 +126,84 @@ function HeroPreview() {
         onMouseLeave={() => setPaused(false)}
       >
         {/* 16:9 stage */}
-        <div className="relative aspect-[16/9] w-full overflow-hidden">
-          {/* ken burns bg */}
-          <motion.div
-            className="absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(circle at 30% 30%, oklch(0.63 0.115 300 / 0.32), transparent 60%), radial-gradient(circle at 75% 70%, oklch(0.55 0.13 320 / 0.28), transparent 65%), var(--color-surface-2)",
-            }}
-            animate={{ scale: [1, 1.08, 1], x: [0, -8, 0], y: [0, 6, 0] }}
-            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        <div className="relative aspect-[16/9] w-full overflow-hidden bg-surface-2">
+          {/* generated scene backdrop with a per-frame camera transform */}
+          <img
+            src={sceneBackdrop}
+            alt=""
+            aria-hidden
+            width={1536}
+            height={864}
+            className="absolute inset-0 size-full object-cover opacity-70"
+            style={{ transform: `scale(${camScale}) translateX(${camX}px)`, willChange: "transform" }}
           />
-          {/* content */}
-          <div className="relative flex h-full flex-col justify-center gap-3 p-6 sm:p-8">
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-              {PREVIEW_SLIDE.kicker}
-            </p>
-            <h2 className="font-display text-xl font-semibold sm:text-2xl">
-              {PREVIEW_SLIDE.title}
-            </h2>
-            <ul className="mt-1 space-y-1.5 text-xs text-muted-foreground sm:text-sm">
-              {PREVIEW_SLIDE.bullets.map((b, i) => (
-                <motion.li
-                  key={b}
-                  initial={{ opacity: 0, filter: "blur(10px)", x: -8 }}
-                  animate={
-                    i < revealed
-                      ? { opacity: 1, filter: "blur(0px)", x: 0 }
-                      : { opacity: 0, filter: "blur(10px)", x: -8 }
-                  }
-                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  • {b}
-                </motion.li>
-              ))}
-            </ul>
-            <AnimatePresence>
+          <div className="absolute inset-0 bg-gradient-to-r from-background/85 via-background/55 to-background/80" />
+
+          {/* two-column broadcast: presenter left, lesson right */}
+          <div className="relative grid h-full grid-cols-[26%_1fr] gap-3 p-4 sm:gap-5 sm:p-6">
+            <div className="relative self-end overflow-hidden rounded-2xl ring-1 ring-border/70">
+              <img
+                src={pose}
+                alt="Studly presenter delivering the lesson"
+                width={768}
+                height={1024}
+                className="size-full object-cover object-top"
+                style={{
+                  transform: `translateY(${Math.sin(f / 34) * 2}px)`,
+                  filter: blinking ? "brightness(0.94)" : undefined,
+                }}
+              />
+              <span className="absolute left-1.5 top-1.5 rounded-full bg-destructive/85 px-1.5 py-0.5 text-[0.55rem] font-bold uppercase tracking-widest text-white">
+                On air
+              </span>
+              {/* live waveform */}
+              <div className="absolute inset-x-0 bottom-0 flex items-end justify-center gap-0.5 bg-gradient-to-t from-black/70 to-transparent p-1.5">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <span
+                    key={i}
+                    className="w-0.5 rounded-full bg-primary"
+                    style={{ height: `${4 + Math.abs(Math.sin((f + i * 5) / 4)) * 10}px` }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col justify-center gap-2">
+              <p className="text-[0.6rem] font-semibold uppercase tracking-widest text-primary sm:text-xs">
+                {PREVIEW_SLIDE.kicker}
+              </p>
+              <h2 className="font-display text-base font-semibold leading-tight sm:text-2xl">
+                {PREVIEW_SLIDE.title}
+              </h2>
+              <ul className="space-y-1 text-[0.7rem] text-muted-foreground sm:text-sm">
+                {PREVIEW_SLIDE.bullets.map((b, i) => (
+                  <li
+                    key={b}
+                    style={{
+                      opacity: i < revealed ? 1 : 0,
+                      filter: i < revealed ? "blur(0px)" : "blur(10px)",
+                      transform: `translateX(${i < revealed ? 0 : -8}px)`,
+                      transition: "opacity .45s, filter .45s, transform .45s",
+                    }}
+                  >
+                    • {b}
+                  </li>
+                ))}
+              </ul>
               {revealed >= PREVIEW_SLIDE.bullets.length && (
-                <motion.p
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="mt-2 inline-block w-fit rounded-xl bg-primary/15 p-3 text-xs ring-1 ring-primary/30 sm:text-sm"
-                >
+                <p className="mt-1 inline-block w-fit rounded-xl bg-primary/15 p-2 text-[0.7rem] ring-1 ring-primary/30 sm:text-sm">
                   <span className="font-semibold text-foreground">Takeaway: </span>
                   <span className="text-muted-foreground">{PREVIEW_SLIDE.takeaway}</span>
-                </motion.p>
+                </p>
               )}
-            </AnimatePresence>
+            </div>
           </div>
+
+          {/* synced caption strip */}
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-2.5 pt-6">
+            <p className="mx-auto max-w-md text-center text-[0.65rem] text-white/85 sm:text-xs">{caption}</p>
+          </div>
+
           {/* play glyph */}
           <div className="absolute right-4 top-4 flex items-center gap-2 text-muted-foreground">
             {paused ? <Pause className="size-4" /> : <Play className="size-4" />}
@@ -156,16 +212,14 @@ function HeroPreview() {
         {/* faux scrub bar */}
         <div className="relative h-9 w-full bg-surface px-4">
           <div className="absolute inset-x-4 top-1/2 h-1 -translate-y-1/2 overflow-hidden rounded-full bg-muted/60">
-            <div
-              className="h-full rounded-full bg-primary"
-              style={{ width: `${progress * 100}%` }}
-            />
+            <div className="h-full rounded-full bg-primary" style={{ width: `${progress * 100}%` }} />
           </div>
         </div>
       </div>
     </Floaty>
   );
 }
+
 
 /* ------------------------------------------------------------------ */
 /* 2. Netflix-style cover shelves                                       */
@@ -249,7 +303,7 @@ const STEPS = [
   {
     n: 2,
     title: "Cast your characters",
-    body: "Name a tutor, add a reference photo, and Studly keeps them consistent across every episode.",
+    body: "Name a tutor and add a reference photo. Studly draws its own illustrated version of them — pose set and all — so the likeness stays consistent without ever using your photo on screen.",
     icons: [Users],
     mock: (
       <div className="glass-card flex items-center gap-3 p-4">
@@ -271,8 +325,8 @@ const STEPS = [
   },
   {
     n: 3,
-    title: "Press play",
-    body: "Episodes auto-generate with a cinematic player, pop-up quizzes, and captions. Then quiz, flashcards, and Susu take over.",
+    title: "Press play — it broadcasts itself",
+    body: "Your cast broadcasts the lesson on a 24fps illustrated stage — talking, blinking, synced captions, pop-up quizzes. No slides to click. Then flashcards and Susu take over.",
     icons: [Clapperboard],
     mock: (
       <div className="relative mx-auto h-52 w-full max-w-sm sm:h-56">
