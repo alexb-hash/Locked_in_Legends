@@ -1139,7 +1139,7 @@ function QuizPopup({
               const isPicked = i === selected;
               return (
                 <button
-                  key={opt}
+                  key={`${i}-${opt}`}
                   type="button"
                   disabled={revealed}
                   onClick={() => settle({ index: i, text: opt })}
