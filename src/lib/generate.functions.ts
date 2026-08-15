@@ -189,7 +189,9 @@ export const buildEpisode = createServerFn({ method: "POST" })
               '"questions":[{"kind":"mcq"|"written","prompt":string,"options":[string],"correct_index":number,"answer_text":string,"explanation":string,"seconds":number}]}. ' +
               "Give 5 slides with 3 substantive bullets each. Give exactly 3 questions: two mcq with 4 options and correct_index, " +
               "one written whose answer_text is a short 1-4 word answer. Every question needs a one-sentence explanation of the correct answer. " +
-              "seconds is 20 for mcq and 30 for written. Reference the cast by name inside the slide narration where it helps.",
+              "seconds is 20 for mcq and 30 for written. Reference the cast by name inside the slide narration where it helps. " +
+              "Questions must be about the lesson content only: never mention, quote, or attribute answers to any cast member. " +
+              "Do not phrase questions as 'According to <character>' or 'What did <character> say'. Ask about the topic itself.",
           },
           {
             role: "user",
