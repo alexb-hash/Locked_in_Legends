@@ -1,6 +1,6 @@
-# Welcome to your Lovable project
+# What it does
 
-This project was built with [Lovable](https://lovable.dev).
+You upload boring study materials and pictures of your friends then Studly transforms them into a bitesized educational episodes. Once the cideo generates, pop up quiz questions appear with a countdown to test your knowledge. Furthermore, an xp system and leaderboard for gamification.
 
 ## Build with Lovable
 
