@@ -16,6 +16,8 @@ import {
   Sparkles,
   Timer,
   Trophy,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 
@@ -23,6 +25,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Ambience } from "@/components/motion/Ambience";
+import { PresenterCanvas } from "@/components/player/PresenterCanvas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -108,9 +111,27 @@ function WatchPage() {
           .eq("episode_id", episodeId)
           .order("order_index", { ascending: true }),
       ]);
-      return { episode, slides: (slides ?? []) as Slide[], questions: (questions ?? []) as Question[] };
+      // The cast member who anchors the broadcast: their reference photo drives the live presenter.
+      let presenter: { name: string; src: string } | null = null;
+      if (episode?.series_id) {
+        const { data: cast } = await supabase
+          .from("series_characters")
+          .select("characters(name, image_urls)")
+          .eq("series_id", episode.series_id);
+        for (const row of cast ?? []) {
+          const c = (row as { characters: { name: string | null; image_urls: unknown } | null }).characters;
+          const urls = Array.isArray(c?.image_urls) ? (c!.image_urls as unknown[]) : [];
+          const first = urls.find((u): u is string => typeof u === "string" && u.length > 0);
+          if (first) {
+            presenter = { name: c?.name ?? "Presenter", src: first };
+            break;
+          }
+        }
+      }
+      return { episode, slides: (slides ?? []) as Slide[], questions: (questions ?? []) as Question[], presenter };
     },
   });
+
 
   const slides = data?.slides ?? [];
   const questions = data?.questions ?? [];
@@ -263,6 +284,7 @@ function WatchPage() {
   return (
     <PlayerStage
       title={data?.episode?.title ?? "Episode"}
+      presenter={data?.presenter ?? null}
       slides={slides}
       index={index}
       paused={Boolean(quiz)}
@@ -309,6 +331,7 @@ function formatTime(ms: number) {
 
 function PlayerStage({
   title,
+  presenter,
   slides,
   index,
   paused,
@@ -317,6 +340,7 @@ function PlayerStage({
   quiz,
 }: {
   title: string;
+  presenter: { name: string; src: string } | null;
   slides: Slide[];
   index: number;
   paused: boolean;
@@ -325,6 +349,8 @@ function PlayerStage({
   quiz: React.ReactNode;
 }) {
   const shellRef = useRef<HTMLDivElement | null>(null);
+  const [voiceOn, setVoiceOn] = useState(true);
+  const [speaking, setSpeaking] = useState(false);
   const [playing, setPlaying] = useState(true);
   const [elapsed, setElapsed] = useState(0);
   const [rate, setRate] = useState(1);
@@ -444,6 +470,36 @@ function PlayerStage({
     return bullets[Math.max(0, revealed - 1)] ?? slide.title;
   }, [bullets, duration, frameTime, revealed, showTakeaway, slide]);
 
+  /**
+   * The presenter speaks the script line the playhead is on. Speech drives the mouth cycle;
+   * with voice muted the mouth still articulates while the line is on screen.
+   */
+  useEffect(() => {
+    const synth = typeof window === "undefined" ? null : window.speechSynthesis;
+    if (!active || !caption) {
+      synth?.cancel();
+      setSpeaking(false);
+      return;
+    }
+    if (!voiceOn || !synth) {
+      setSpeaking(true);
+      return;
+    }
+    synth.cancel();
+    const utter = new SpeechSynthesisUtterance(caption);
+    utter.rate = Math.min(2, 0.98 * rate);
+    utter.pitch = 1.02;
+    utter.onstart = () => setSpeaking(true);
+    utter.onend = () => setSpeaking(false);
+    utter.onerror = () => setSpeaking(false);
+    synth.speak(utter);
+    return () => {
+      synth.cancel();
+      setSpeaking(false);
+    };
+  }, [active, caption, rate, voiceOn]);
+
+  useEffect(() => () => window.speechSynthesis?.cancel(), []);
 
 
   const nudgeUi = useCallback(() => {
@@ -574,6 +630,16 @@ function PlayerStage({
 
         </AnimatePresence>
 
+        {/* Live presenter: the cast face, re-composited every 24fps frame while the lesson plays. */}
+        {presenter && (
+          <PresenterCanvas
+            src={presenter.src}
+            name={presenter.name}
+            speaking={speaking && active}
+            className="absolute right-[4%] top-[6%] z-20 aspect-[3/4] w-[20%] min-w-24 shadow-glow-sm"
+          />
+        )}
+
         {/* Captions */}
         {captionsOn && caption && (
           <div
@@ -681,6 +747,20 @@ function PlayerStage({
               >
                 {captionsOn ? <Captions className="size-4" /> : <CaptionsOff className="size-4" />}
               </button>
+              <button
+                type="button"
+                onClick={() => setVoiceOn((v) => !v)}
+                aria-pressed={voiceOn}
+                aria-label={voiceOn ? "Mute the presenter" : "Unmute the presenter"}
+                className={cn(
+                  "press grid size-9 place-items-center rounded-full hover:bg-white/15",
+                  voiceOn && "bg-white/20 ring-1 ring-white/40",
+                )}
+              >
+                {voiceOn ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+              </button>
+
+
 
               <button
                 type="button"
