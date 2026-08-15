@@ -21,14 +21,12 @@ export function AuthShell({
       <Ambience />
       <Reveal className="relative w-full max-w-md">
         <div className="glass-card glow-ring p-8 backdrop-blur-xl sm:p-10">
-          <Floaty amount={5} className="mb-7 flex items-center gap-3">
-            <span className="grid size-11 place-items-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/30">
-              <Sparkles className="size-5" />
-            </span>
-            <Link to="/" className="font-display text-2xl font-bold tracking-tight text-gradient">
-              Studly
+          <Floaty amount={5} className="mb-7 flex items-center justify-center">
+            <Link to="/" aria-label="Studly home">
+              <StudlyLogo className="h-16" />
             </Link>
           </Floaty>
+
 
           <h1 className="font-display text-2xl font-semibold text-foreground">{title}</h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
