@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 
-const FPS = 24;
+const FPS = 60;
 /** Drawn animation cadence: poses swap ~12 times a second so it reads as speech, not a strobe. */
-const SWAP_EVERY = 2;
+const SWAP_EVERY = 5;
 
 export type PresenterFrames = Partial<Record<"mouth_closed" | "mouth_mid" | "mouth_open" | "blink" | "gesture", string>>;
 
@@ -11,7 +11,7 @@ export type PresenterFrames = Partial<Record<"mouth_closed" | "mouth_mid" | "mou
  * The on-air presenter, drawn entirely from AI-generated artwork.
  *
  * The cast member's uploaded photo is only ever a likeness reference during generation — what
- * plays here is a set of generated poses cycled on the same 24fps clock as the lesson, so the
+ * plays here is a set of generated poses cycled on the same 60fps clock as the lesson, so the
  * mouth genuinely changes shape between drawn frames and blinks land naturally.
  */
 export function PresenterStage({
@@ -58,7 +58,7 @@ export function PresenterStage({
     const t = frame / FPS;
     const step = Math.floor(frame / SWAP_EVERY);
     // Blink for ~2 drawn frames every ~3.5s.
-    const blinking = Boolean(order.blink) && frame % Math.round(FPS * 3.5) < 3;
+    const blinking = Boolean(order.blink) && frame % Math.round(FPS * 3.5) < 7;
     const src = blinking ? order.blink : speaking && order.talk.length ? order.talk[step % order.talk.length]! : order.idle;
     const breath = Math.sin(t / 2.6);
     const sway = Math.sin(t / 3.8);

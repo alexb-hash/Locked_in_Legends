@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import {
+  BrainCircuit,
   Clapperboard,
   FileText,
   Flame,
@@ -9,7 +10,10 @@ import {
   Link2,
   Pause,
   Play,
+  Layers,
+  ListChecks,
   Sparkles,
+  Trophy,
   Type,
   Users,
 } from "lucide-react";
@@ -22,7 +26,17 @@ import presenterMid from "@/assets/presenter-demo-mid.jpg";
 import presenterOpen from "@/assets/presenter-demo-open.jpg";
 import sceneBackdrop from "@/assets/scene-demo-backdrop.jpg";
 import { Ambience } from "@/components/motion/Ambience";
-import { Floaty, RevealItem, ScrollReveal, ScrollRevealGroup } from "@/components/motion/Reveal";
+import {
+  Floaty,
+  MaskItem,
+  MaskReveal,
+  MaskRevealGroup,
+  RevealItem,
+  ScrollReveal,
+  ScrollRevealGroup,
+  WordReveal,
+} from "@/components/motion/Reveal";
+import { Parallax } from "@/components/motion/Parallax";
 import { StudlyLogo } from "@/components/brand/StudlyLogo";
 import { Markdown } from "@/components/chat/Markdown";
 import { Button } from "@/components/ui/button";
@@ -87,11 +101,11 @@ const PREVIEW_SLIDE = {
 const PRESENTER_POSES = [presenterClosed, presenterMid, presenterOpen, presenterMid];
 
 /**
- * Mirrors the real player: one 24fps broadcast clock drives the pose cycle,
+ * Mirrors the real player: one 60fps broadcast clock drives the pose cycle,
  * the caption line, the bullet reveals and the camera drift — nothing is clicked.
  */
 function HeroPreview() {
-  const [tick, setTick] = useState(0); // frames on the 24fps grid
+  const [tick, setTick] = useState(0); // frames on the 60fps grid
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
@@ -99,27 +113,27 @@ function HeroPreview() {
     let raf = 0;
     const start = performance.now();
     const loop = (now: number) => {
-      setTick(Math.floor((now - start) / (1000 / 24)));
+      setTick(Math.floor((now - start) / (1000 / 60)));
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [paused]);
 
-  const LOOP = 24 * 9; // 9 second loop
+  const LOOP = 60 * 9; // 9 second loop
   const f = tick % LOOP;
   const progress = f / LOOP;
 
   // 12fps drawn cadence for the mouth, blink beat every ~2.5s.
-  const blinking = f % 60 > 55;
-  const pose = PRESENTER_POSES[Math.floor(f / 2) % PRESENTER_POSES.length]!;
+  const blinking = f % 150 > 138;
+  const pose = PRESENTER_POSES[Math.floor(f / 5) % PRESENTER_POSES.length]!;
   const revealed = Math.min(PREVIEW_SLIDE.bullets.length, Math.floor(progress * (PREVIEW_SLIDE.bullets.length + 1)));
   const caption =
     PREVIEW_SLIDE.captions[Math.min(PREVIEW_SLIDE.captions.length - 1, Math.max(0, revealed - 1))]!;
 
   // Slow camera push on the generated backdrop, computed per frame like the player.
-  const camScale = 1.06 + Math.sin(f / 90) * 0.03;
-  const camX = Math.sin(f / 120) * 8;
+  const camScale = 1.06 + Math.sin(f / 225) * 0.03;
+  const camX = Math.sin(f / 300) * 8;
 
   return (
     <Floaty className="mt-28 sm:mt-40" amount={10}>
@@ -329,7 +343,7 @@ const STEPS = [
   {
     n: 3,
     title: "Press play — it broadcasts itself",
-    body: "Your cast broadcasts the lesson on a 24fps illustrated stage — talking, blinking, synced captions, pop-up quizzes. No slides to click. Then flashcards and Susu take over.",
+    body: "Your cast broadcasts the lesson on a 60fps illustrated stage — talking, blinking, synced captions, pop-up quizzes. No slides to click. Then flashcards and Susu take over.",
     icons: [Clapperboard],
     mock: (
       <div className="relative mx-auto h-52 w-full max-w-sm sm:h-56">
@@ -373,34 +387,191 @@ const STEPS = [
 
 function HowItWorks() {
   return (
-    <section className="relative mx-auto w-full max-w-5xl px-5 py-20 sm:px-8">
-      <ScrollReveal className="text-center">
-        <h2 className="font-display text-2xl font-bold sm:text-3xl">From notes to a season in 3 steps</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          No setup, no editing software. Just your study material and a press of a button.
-        </p>
-      </ScrollReveal>
-      <div className="mt-12 space-y-16">
+    <section className="relative mx-auto w-full max-w-6xl px-5 py-24 sm:px-8">
+      <div aria-hidden className="hairline-grid pointer-events-none absolute inset-0 -z-10" />
+
+      <div className="relative max-w-2xl">
+        <MaskReveal from="left">
+          <span className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.2em] text-primary ring-1 ring-primary/30">
+            The pipeline
+          </span>
+        </MaskReveal>
+        <MaskReveal delay={0.08} className="mt-4">
+          <h2 className="font-display text-3xl font-bold leading-[1.05] sm:text-5xl">
+            Notes in.
+            <br />
+            <span className="text-gradient">A whole season out.</span>
+          </h2>
+        </MaskReveal>
+        <ScrollReveal delay={0.18} className="mt-4">
+          <p className="max-w-md text-sm text-muted-foreground sm:text-base">
+            No setup, no editing software. Three moves and your material is broadcasting itself.
+          </p>
+        </ScrollReveal>
+      </div>
+
+      <div className="relative mt-16 space-y-14 sm:space-y-24">
         {STEPS.map((step, i) => {
           const flip = i % 2 === 1;
           return (
-            <ScrollReveal key={step.n}>
-              <div className="grid items-center gap-6 sm:grid-cols-2 sm:gap-10">
-                <div className={flip ? "sm:order-2" : ""}>
-                  <div className="mb-3 flex items-center gap-3">
-                    <span className="grid size-8 place-items-center rounded-full bg-primary/15 font-display text-sm font-bold text-primary ring-1 ring-primary/30">
-                      {step.n}
-                    </span>
-                    <h3 className="font-display text-lg font-semibold">{step.title}</h3>
+            <div key={step.n} className="relative">
+              {/* oversized ghost numeral sitting behind the row */}
+              <span
+                aria-hidden
+                className="ghost-numeral absolute -top-10 z-0 text-[7rem] sm:-top-20 sm:text-[13rem]"
+                style={flip ? { right: "-1.5rem" } : { left: "-1.5rem" }}
+              >
+                {step.n}
+              </span>
+
+              <div
+                className={
+                  "relative z-10 grid items-center gap-6 sm:grid-cols-12 sm:gap-4 " +
+                  (flip ? "" : "")
+                }
+              >
+                <MaskReveal
+                  from={flip ? "right" : "left"}
+                  className={
+                    flip
+                      ? "sm:col-span-5 sm:col-start-8 sm:order-2"
+                      : "sm:col-span-5 sm:col-start-1"
+                  }
+                >
+                  <div className="relative">
+                    <div className="mb-3 flex items-center gap-2 text-primary">
+                      {step.icons.map((Icon, k) => (
+                        <span
+                          key={k}
+                          className="grid size-8 place-items-center rounded-xl bg-primary/12 ring-1 ring-primary/25"
+                        >
+                          <Icon className="size-4" />
+                        </span>
+                      ))}
+                    </div>
+                    <h3 className="font-display text-xl font-bold sm:text-2xl">{step.title}</h3>
+                    <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">{step.body}</p>
                   </div>
-                  <p className="max-w-sm text-sm text-muted-foreground sm:max-w-none">{step.body}</p>
+                </MaskReveal>
+
+                {/* mock breaks out of its column and overlaps the copy edge */}
+                <div
+                  className={
+                    flip
+                      ? "sm:col-span-7 sm:col-start-1 sm:-mr-10 sm:order-1"
+                      : "sm:col-span-7 sm:col-start-6 sm:-ml-10"
+                  }
+                >
+                  <Parallax depth={i === 1 ? 34 : 22} rotate={flip ? -1.2 : 1.2}>
+                    <MaskReveal delay={0.12}>
+                      <div className="tile edge-bleed sheen-sweep grain relative p-4 sm:p-6">
+                        <div
+                          aria-hidden
+                          className="animate-aurora pointer-events-none absolute -right-16 -top-20 size-64 rounded-full blur-3xl"
+                          style={{
+                            background:
+                              "radial-gradient(circle, oklch(0.62 0.175 298 / 0.4), transparent 70%)",
+                            animationDelay: `${i * -5}s`,
+                          }}
+                        />
+                        <div className="relative z-[1]">{step.mock}</div>
+                      </div>
+                    </MaskReveal>
+                  </Parallax>
                 </div>
-                <div className={flip ? "sm:order-1" : ""}>{step.mock}</div>
               </div>
-            </ScrollReveal>
+            </div>
           );
         })}
       </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* 3b. Capability bento — dense, unequal tiles                         */
+/* ------------------------------------------------------------------ */
+
+const CAPABILITIES = [
+  {
+    icon: Clapperboard,
+    title: "Episodes that play themselves",
+    body: "A 60fps illustrated stage, synced captions, no slide clicking.",
+    span: "sm:col-span-7 sm:row-span-2",
+    big: true,
+  },
+  {
+    icon: ListChecks,
+    title: "Pop-up quizzes",
+    body: "MCQ and written, live countdown, explanation on every miss.",
+    span: "sm:col-span-5",
+  },
+  {
+    icon: Layers,
+    title: "Flashcards on tap",
+    body: "Decks generated from the episode you just watched.",
+    span: "sm:col-span-5",
+  },
+  {
+    icon: BrainCircuit,
+    title: "Susu, mid-lesson",
+    body: "One tap from a wrong answer to a Socratic nudge.",
+    span: "sm:col-span-4",
+  },
+  {
+    icon: Trophy,
+    title: "Leagues & XP",
+    body: "Two-week seasons, six tiers, streaks that actually sting.",
+    span: "sm:col-span-4",
+  },
+  {
+    icon: Flame,
+    title: "Streak engine",
+    body: "Show up daily, keep the flame, bank the multiplier.",
+    span: "sm:col-span-4",
+  },
+];
+
+function CapabilityBento() {
+  return (
+    <section className="relative mx-auto w-full max-w-6xl px-5 py-16 sm:px-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <MaskReveal from="left">
+          <h2 className="font-display text-2xl font-bold sm:text-4xl">Everything runs in one loop</h2>
+        </MaskReveal>
+        <ScrollReveal delay={0.1}>
+          <p className="max-w-xs text-sm text-muted-foreground">
+            Watch, get quizzed, get coached, get promoted. Nothing to stitch together.
+          </p>
+        </ScrollReveal>
+      </div>
+
+      <MaskRevealGroup className="mt-8 grid gap-4 sm:grid-cols-12" stagger={0.08}>
+        {CAPABILITIES.map((c) => (
+          <MaskItem key={c.title} className={c.span}>
+            <div className="tile sheen-sweep grain group relative flex h-full flex-col justify-between overflow-hidden p-5 sm:p-6">
+              <div
+                aria-hidden
+                className="animate-aurora pointer-events-none absolute -bottom-24 -left-16 size-56 rounded-full blur-3xl opacity-70"
+                style={{ background: "radial-gradient(circle, oklch(0.62 0.175 298 / 0.32), transparent 70%)" }}
+              />
+              <span className="relative grid size-10 place-items-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/30">
+                <c.icon className="size-5" />
+              </span>
+              <div className="relative mt-6">
+                <h3
+                  className={
+                    "font-display font-bold " + (c.big ? "text-xl sm:text-3xl" : "text-base sm:text-lg")
+                  }
+                >
+                  {c.title}
+                </h3>
+                <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">{c.body}</p>
+              </div>
+            </div>
+          </MaskItem>
+        ))}
+      </MaskRevealGroup>
     </section>
   );
 }
@@ -413,41 +584,69 @@ const SUSU_SAMPLE = `**Student:** Why does mitosis matter?\n\n**Susu:** Good que
 
 function SusuSpotlight() {
   return (
-    <section className="relative mx-auto w-full max-w-5xl px-5 py-20 sm:px-8">
-      <div className="grid items-center gap-8 sm:grid-cols-2 sm:gap-12">
-        <ScrollReveal>
-          <span className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary ring-1 ring-primary/30">
+    <section className="relative mx-auto w-full max-w-6xl px-5 py-24 sm:px-8">
+      <div className="relative grid items-center gap-10 sm:grid-cols-12">
+        {/* glowing aura panel the chat card overlaps */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-6 right-0 hidden w-[58%] rounded-[2.5rem] sm:block"
+          style={{
+            background:
+              "linear-gradient(140deg, oklch(0.62 0.175 298 / 0.22), oklch(0.55 0.14 320 / 0.08) 55%, transparent)",
+            border: "1px solid oklch(0.7 0.17 300 / 0.22)",
+          }}
+        />
+
+        <MaskReveal from="left" className="relative z-10 sm:col-span-5">
+          <span className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary ring-1 ring-primary/30">
             <Sparkles className="size-3.5" /> Susu
           </span>
-          <h2 className="mt-4 font-display text-2xl font-bold sm:text-3xl">A tutor that coaches, never cheats.</h2>
-          <p className="mt-3 max-w-sm text-sm text-muted-foreground">
-            Susu sits inside the chat like a study buddy who's read every episode. Ask a question mid-quiz and
-            get a Socratic nudge, a mini-quiz, or a flashcard deck — never the answer on a plate.
+          <h2 className="mt-5 font-display text-3xl font-bold leading-[1.05] sm:text-5xl">
+            A tutor that coaches,
+            <br />
+            <span className="text-gradient">never cheats.</span>
+          </h2>
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Susu sits inside the chat like a study buddy who's read every episode. Ask mid-quiz and get a
+            Socratic nudge, a mini-quiz, or a deck — never the answer on a plate.
           </p>
-          <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
-            <li>• Hints that lead you to the "aha"</li>
-            <li>• Generates flashcard decks on request</li>
-            <li>• Follows up straight from a wrong quiz answer</li>
+          <ul className="mt-6 space-y-2.5 text-sm text-muted-foreground">
+            {[
+              "Hints that lead you to the \u201caha\u201d",
+              "Generates flashcard decks on request",
+              "Follows up straight from a wrong quiz answer",
+            ].map((line) => (
+              <li key={line} className="flex items-start gap-2.5">
+                <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
+                {line}
+              </li>
+            ))}
           </ul>
-        </ScrollReveal>
-        <Floaty amount={7}>
-          <ScrollReveal delay={0.1}>
-            <div className="glass-card glow-ring mx-auto max-w-md p-5">
-              <div className="flex items-center gap-2 border-b border-border pb-3">
-                <span className="grid size-7 place-items-center rounded-full bg-primary/15 text-primary ring-1 ring-primary/30">
-                  <GraduationCap className="size-4" />
-                </span>
-                <span className="text-sm font-semibold">Susu</span>
-                <span className="ml-auto flex items-center gap-1 text-xs text-success">
-                  <span className="size-1.5 rounded-full bg-success" /> online
-                </span>
-              </div>
-              <div className="pt-3 text-sm text-muted-foreground">
-                <Markdown content={SUSU_SAMPLE} />
-              </div>
-            </div>
-          </ScrollReveal>
-        </Floaty>
+        </MaskReveal>
+
+        {/* card breaks its column, tilts, and overlaps the aura panel */}
+        <div className="relative z-10 sm:col-span-7 sm:-ml-12">
+          <Parallax depth={40} rotate={1.6}>
+            <Floaty amount={7}>
+              <MaskReveal delay={0.12}>
+                <div className="glass-card edge-bleed grain glow-ring relative mx-auto max-w-md rotate-[-1.5deg] p-5 sm:rotate-[-2.5deg]">
+                  <div className="flex items-center gap-2 border-b border-border pb-3">
+                    <span className="grid size-7 place-items-center rounded-full bg-primary/15 text-primary ring-1 ring-primary/30">
+                      <GraduationCap className="size-4" />
+                    </span>
+                    <span className="text-sm font-semibold">Susu</span>
+                    <span className="ml-auto flex items-center gap-1 text-xs text-success">
+                      <span className="size-1.5 rounded-full bg-success" /> online
+                    </span>
+                  </div>
+                  <div className="relative z-[1] pt-3 text-sm text-muted-foreground">
+                    <Markdown content={SUSU_SAMPLE} />
+                  </div>
+                </div>
+              </MaskReveal>
+            </Floaty>
+          </Parallax>
+        </div>
       </div>
     </section>
   );
@@ -459,64 +658,86 @@ function SusuSpotlight() {
 
 function LeaguesShowcase() {
   return (
-    <section className="relative mx-auto w-full max-w-6xl px-5 py-20 sm:px-8">
-      <ScrollReveal className="text-center">
-        <h2 className="font-display text-2xl font-bold sm:text-3xl">Two-week seasons. Promotion is the goal.</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          Climb six tiers, keep your streak lit, and finish the season in the top three.
-        </p>
-      </ScrollReveal>
+    <section className="relative mx-auto w-full max-w-6xl px-5 py-24 sm:px-8">
+      <div className="grid gap-10 sm:grid-cols-12">
+        <MaskReveal from="left" className="sm:col-span-5">
+          <h2 className="font-display text-3xl font-bold leading-[1.05] sm:text-5xl">
+            Two-week seasons.
+            <br />
+            <span className="text-gradient">Promotion is the goal.</span>
+          </h2>
+          <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
+            Climb six tiers, keep your streak lit, and finish the season in the top three.
+          </p>
 
-      <ScrollRevealGroup className="mt-10 flex flex-wrap items-end justify-center gap-4 sm:gap-6">
-        {LEAGUE_TIERS.map((tier, i) => {
-          const t = TROPHIES[tier]!;
-          return (
-            <RevealItem key={tier}>
-              <div className="flex flex-col items-center gap-2">
-                <div
-                  className="relative grid size-16 place-items-center rounded-2xl bg-surface-2 ring-1 ring-border sm:size-20"
-                  style={{ boxShadow: `0 14px 40px -22px ${t.glow}` }}
-                >
-                  <img
-                    src={t.url}
-                    alt={t.name}
-                    className="size-12 object-contain drop-shadow-[0_0_16px_var(--color-primary)] sm:size-14"
-                    style={{ filter: `drop-shadow(0 0 10px ${t.glow})` }}
-                  />
-                  {i === 0 && (
-                    <span className="absolute -top-2 -right-2 rounded-full bg-primary px-2 py-0.5 text-[0.6rem] font-bold text-primary-foreground">
-                      You
-                    </span>
-                  )}
-                </div>
-                <span className="text-xs font-semibold text-muted-foreground">{t.name}</span>
-              </div>
-            </RevealItem>
-          );
-        })}
-      </ScrollRevealGroup>
+          <ScrollReveal delay={0.15} className="mt-7 space-y-3">
+            <div className="glass-card lift flex items-center gap-2 px-4 py-2.5">
+              <Flame className="size-4 text-gold" />
+              <span className="text-sm font-semibold">5-day streak</span>
+            </div>
+            <div className="glass-card lift flex items-center gap-3 px-4 py-2.5">
+              <span className="grid size-7 place-items-center rounded-full bg-gold/20 font-display text-xs font-bold text-gold ring-1 ring-gold/40">
+                1
+              </span>
+              <span className="text-sm">
+                <span className="font-semibold">adminns</span>{" "}
+                <span className="text-muted-foreground">· 2,480 XP</span>
+              </span>
+            </div>
+            <div className="glass-card lift ml-6 flex items-center gap-3 px-4 py-2.5">
+              <span className="grid size-7 place-items-center rounded-full bg-muted/50 font-display text-xs font-bold text-muted-foreground">
+                2
+              </span>
+              <span className="text-sm text-muted-foreground">2,110 XP</span>
+            </div>
+          </ScrollReveal>
+        </MaskReveal>
 
-      <ScrollReveal delay={0.15} className="mt-8 flex flex-wrap items-center justify-center gap-3">
-        <div className="glass-card flex items-center gap-2 px-4 py-2">
-          <Flame className="size-4 text-gold" />
-          <span className="text-sm font-semibold">5-day streak</span>
+        {/* trophies scattered off-grid inside a tilted studio panel */}
+        <div className="relative sm:col-span-7">
+          <Parallax depth={30} rotate={-1.4}>
+            <div className="tile grain relative overflow-hidden p-6 sm:p-8">
+              <div
+                aria-hidden
+                className="animate-aurora pointer-events-none absolute -top-24 left-1/3 size-72 rounded-full blur-3xl"
+                style={{ background: "radial-gradient(circle, oklch(0.62 0.175 298 / 0.35), transparent 70%)" }}
+              />
+              <ScrollRevealGroup className="relative z-[1] grid grid-cols-3 gap-x-4 gap-y-7 sm:grid-cols-3">
+                {LEAGUE_TIERS.map((tier, i) => {
+                  const t = TROPHIES[tier]!;
+                  const offsets = ["", "sm:translate-y-6", "sm:-translate-y-3", "sm:translate-y-4", "", "sm:translate-y-7"];
+                  return (
+                    <RevealItem key={tier} className={offsets[i % offsets.length] ?? ""}>
+                      <Floaty amount={5} delay={i * 0.35}>
+                        <div className="flex flex-col items-center gap-2">
+                          <div
+                            className="lift relative grid size-16 place-items-center rounded-2xl bg-surface-2 ring-1 ring-border sm:size-20"
+                            style={{ boxShadow: `0 16px 46px -22px ${t.glow}` }}
+                          >
+                            <img
+                              src={t.url}
+                              alt={t.name}
+                              loading="lazy"
+                              className="size-12 object-contain sm:size-14"
+                              style={{ filter: `drop-shadow(0 0 12px ${t.glow})` }}
+                            />
+                            {i === 0 && (
+                              <span className="absolute -top-2 -right-2 rounded-full bg-primary px-2 py-0.5 text-[0.6rem] font-bold text-primary-foreground">
+                                You
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs font-semibold text-muted-foreground">{t.name}</span>
+                        </div>
+                      </Floaty>
+                    </RevealItem>
+                  );
+                })}
+              </ScrollRevealGroup>
+            </div>
+          </Parallax>
         </div>
-        <div className="glass-card flex items-center gap-3 px-4 py-2">
-          <span className="grid size-7 place-items-center rounded-full bg-gold/20 font-display text-xs font-bold text-gold ring-1 ring-gold/40">
-            1
-          </span>
-          <span className="text-sm">
-            <span className="font-semibold">adminns</span>{" "}
-            <span className="text-muted-foreground">· 2,480 XP</span>
-          </span>
-        </div>
-        <div className="glass-card flex items-center gap-3 px-4 py-2">
-          <span className="grid size-7 place-items-center rounded-full bg-muted/50 font-display text-xs font-bold text-muted-foreground">
-            2
-          </span>
-          <span className="text-sm text-muted-foreground">2,110 XP</span>
-        </div>
-      </ScrollReveal>
+      </div>
     </section>
   );
 }
@@ -577,7 +798,7 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <main className="relative min-h-screen overflow-hidden">
+    <main className="grain relative min-h-screen overflow-hidden">
       <Ambience density={20} />
 
       <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-6 sm:px-8">
@@ -596,8 +817,8 @@ function Landing() {
 
       <section className="relative mx-auto w-full max-w-3xl px-5 pt-16 pb-10 text-center sm:px-8 sm:pt-24">
         <ScrollReveal>
-          <h1 className="font-sans text-3xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
-            Make studying <span className="text-gradient">hit different.</span>
+          <h1 className="font-display text-4xl font-bold leading-[1.02] tracking-[-0.03em] sm:text-6xl">
+            <WordReveal text="Make studying hit different." accentFrom={2} delay={0.15} />
           </h1>
         </ScrollReveal>
         <RotatingSubtitle />
@@ -616,6 +837,7 @@ function Landing() {
       </section>
 
       <HowItWorks />
+      <CapabilityBento />
       <SusuSpotlight />
       <LeaguesShowcase />
       <FinalCta />

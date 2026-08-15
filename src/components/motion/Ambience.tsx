@@ -29,7 +29,7 @@ export function Ambience({
   return (
     <div aria-hidden className={cn("pointer-events-none absolute inset-0 overflow-hidden", opacity, className)}>
       <div
-        className="aurora-blob animate-drift"
+        className="aurora-blob animate-aurora"
         style={{
           top: "-14%",
           left: "-8%",
@@ -39,7 +39,7 @@ export function Ambience({
         }}
       />
       <div
-        className="aurora-blob animate-drift"
+        className="aurora-blob animate-aurora"
         style={{
           bottom: "-22%",
           right: "-12%",
@@ -50,7 +50,7 @@ export function Ambience({
         }}
       />
       <div
-        className="aurora-blob animate-drift"
+        className="aurora-blob animate-aurora"
         style={{
           top: "34%",
           left: "42%",
