@@ -102,7 +102,7 @@ function WatchPage() {
         supabase.from("episodes").select("id, title, synopsis, series_id, order_index").eq("id", episodeId).maybeSingle(),
         supabase
           .from("episode_slides")
-          .select("id, order_index, title, bullets, takeaway")
+          .select("id, order_index, title, bullets, takeaway, art_url")
           .eq("episode_id", episodeId)
           .order("order_index", { ascending: true }),
         supabase
@@ -111,24 +111,29 @@ function WatchPage() {
           .eq("episode_id", episodeId)
           .order("order_index", { ascending: true }),
       ]);
-      // The cast member who anchors the broadcast: their reference photo drives the live presenter.
-      let presenter: { name: string; src: string } | null = null;
+      // The on-air presenter is drawn from AI-generated pose art, never from the uploaded photo.
+      let presenter: { name: string; frames: PresenterFrames } | null = null;
       if (episode?.series_id) {
         const { data: cast } = await supabase
           .from("series_characters")
-          .select("characters(name, image_urls)")
+          .select("character_id, characters(name)")
+          .eq("series_id", episode.series_id);
+        const { data: art } = await supabase
+          .from("character_frames")
+          .select("character_id, kind, url")
           .eq("series_id", episode.series_id);
         for (const row of cast ?? []) {
-          const c = (row as { characters: { name: string | null; image_urls: unknown } | null }).characters;
-          const urls = Array.isArray(c?.image_urls) ? (c!.image_urls as unknown[]) : [];
-          const first = urls.find((u): u is string => typeof u === "string" && u.length > 0);
-          if (first) {
-            presenter = { name: c?.name ?? "Presenter", src: first };
-            break;
-          }
+          const r = row as { character_id: string; characters: { name: string | null } | null };
+          const mine = (art ?? []).filter((f) => f.character_id === r.character_id);
+          if (!mine.length) continue;
+          const frames: PresenterFrames = {};
+          for (const f of mine) frames[f.kind as keyof PresenterFrames] = f.url;
+          presenter = { name: r.characters?.name ?? "Presenter", frames };
+          break;
         }
       }
       return { episode, slides: (slides ?? []) as Slide[], questions: (questions ?? []) as Question[], presenter };
+
     },
   });
 
