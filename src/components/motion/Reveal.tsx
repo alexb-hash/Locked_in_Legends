@@ -167,25 +167,26 @@ export function MaskReveal({
   from?: "bottom" | "left" | "right";
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.15 });
+  const inView = useInView(ref, { once: true, amount: 0.1, margin: "0px 0px -8% 0px" });
 
   const hidden =
     from === "left"
-      ? { clipPath: "inset(0% 100% 0% 0%)", opacity: 0, x: -18, y: 0 }
+      ? { x: "-100%", y: 0, opacity: 0 }
       : from === "right"
-        ? { clipPath: "inset(0% 0% 0% 100%)", opacity: 0, x: 18, y: 0 }
-        : { clipPath: "inset(100% 0% 0% 0%)", opacity: 0, x: 0, y: 26 };
+        ? { x: "100%", y: 0, opacity: 0 }
+        : { x: 0, y: "100%", opacity: 0 };
 
   return (
-    <motion.div
-      ref={ref}
-      initial={hidden}
-      animate={inView ? { clipPath: "inset(0% 0% 0% 0%)", opacity: 1, x: 0, y: 0 } : hidden}
-      transition={{ duration: 0.9, delay, ease: MASK_EASE }}
-      className={cn(className)}
-    >
-      {children}
-    </motion.div>
+    <div ref={ref} className={cn("overflow-hidden", className)}>
+      <motion.div
+        initial={hidden}
+        animate={inView ? { x: 0, y: 0, opacity: 1 } : hidden}
+        transition={{ duration: 0.9, delay, ease: MASK_EASE }}
+        className="will-change-transform"
+      >
+        {children}
+      </motion.div>
+    </div>
   );
 }
 
