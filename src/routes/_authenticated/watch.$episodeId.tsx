@@ -36,10 +36,26 @@ type Question = {
   order_index: number;
   prompt: string;
   options: unknown;
-  correct_index: number;
+  correct_index: number | null;
   explanation: string;
   seconds: number;
+  kind: string;
+  answer_text: string | null;
 };
+
+/** Lenient grading for typed answers: case, spacing and trailing punctuation are ignored. */
+export function gradeWritten(input: string, expected: string | null) {
+  const norm = (v: string) =>
+    v
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  const a = norm(input);
+  const b = norm(expected ?? "");
+  if (!a || !b) return false;
+  return a === b || a.includes(b) || b.includes(a);
+}
 
 function asStrings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
@@ -70,7 +86,7 @@ function WatchPage() {
           .order("order_index", { ascending: true }),
         supabase
           .from("episode_questions")
-          .select("id, order_index, prompt, options, correct_index, explanation, seconds")
+          .select("id, order_index, prompt, options, correct_index, explanation, seconds, kind, answer_text")
           .eq("episode_id", episodeId)
           .order("order_index", { ascending: true }),
       ]);
@@ -154,8 +170,8 @@ function WatchPage() {
     else void finish();
   }
 
-  async function handleAnswer(question: Question, selected: number | null, ms: number) {
-    const correct = selected === question.correct_index;
+  async function handleAnswer(question: Question, answer: { index: number | null; text: string | null }, correct: boolean, ms: number) {
+    const selected = answer.index;
     if (correct) {
       const res = await awardXp("quiz_correct", XP.correctAnswer, `q:${question.id}`);
       setEarned((prev) => prev + res.awarded);
@@ -175,10 +191,10 @@ function WatchPage() {
         episode_id: episodeId,
         question_id: question.id,
         question_text: question.prompt,
-        selected_answer: selected === null ? null : asStrings(question.options)[selected] ?? null,
+        selected_answer: answer.text ?? (selected === null ? null : asStrings(question.options)[selected] ?? null),
         is_correct: correct,
         time_taken_ms: ms,
-        timed_out: selected === null,
+        timed_out: selected === null && !answer.text,
       });
     }
   }
@@ -289,8 +305,8 @@ function WatchPage() {
           <QuizPopup
             key={quiz.id}
             question={quiz}
-            onDone={async (selected, ms) => {
-              await handleAnswer(quiz, selected, ms);
+            onDone={async (answer, correct, ms) => {
+              await handleAnswer(quiz, answer, correct, ms);
             }}
             onClose={() => {
               setQuiz(null);
