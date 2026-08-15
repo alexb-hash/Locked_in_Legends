@@ -545,6 +545,20 @@ function PlayerStage({
 
         </AnimatePresence>
 
+        {/* Captions */}
+        {captionsOn && caption && (
+          <div
+            className={cn(
+              "pointer-events-none absolute inset-x-0 z-20 flex justify-center px-6 transition-all duration-300",
+              uiVisible || !playing ? "bottom-24" : "bottom-10",
+            )}
+          >
+            <p className="max-w-[80%] rounded-xl bg-black/65 px-3 py-1.5 text-center text-[clamp(0.75rem,1.3vw,1rem)] font-medium leading-snug text-white backdrop-blur-sm">
+              {caption}
+            </p>
+          </div>
+        )}
+
         {/* Controls */}
         <div
           className={cn(
@@ -552,26 +566,50 @@ function PlayerStage({
             uiVisible || !playing ? "opacity-100" : "opacity-0",
           )}
         >
-          {/* Chapter timeline */}
-          <div className="flex items-end gap-1">
-            {slides.map((s, i) => (
-              <button
-                key={s.id}
-                type="button"
-                aria-label={`Scene ${i + 1}: ${s.title}`}
-                onClick={() => onSeek(i)}
-                style={{ flexGrow: durations[i] }}
-                className="group/chap relative h-4 shrink-0 basis-0 pt-2.5"
-              >
-                <span className="block h-1.5 overflow-hidden rounded-full bg-white/25 transition-all group-hover/chap:h-2">
+          {/* Scrubbable timeline with chapter markers */}
+          <div
+            ref={barRef}
+            role="slider"
+            tabIndex={0}
+            aria-label="Seek"
+            aria-valuemin={0}
+            aria-valuemax={Math.round(totalMs / 1000)}
+            aria-valuenow={Math.round((before + elapsed) / 1000)}
+            onPointerDown={(e) => {
+              e.currentTarget.setPointerCapture(e.pointerId);
+              setScrubbing(true);
+              seekFromPointer(e.clientX);
+            }}
+            onPointerMove={(e) => {
+              if (scrubbing) seekFromPointer(e.clientX);
+            }}
+            onPointerUp={() => setScrubbing(false)}
+            onPointerCancel={() => setScrubbing(false)}
+            className="group/bar relative cursor-pointer touch-none py-2"
+          >
+            <div className="relative h-1.5 rounded-full bg-white/25 transition-all group-hover/bar:h-2.5">
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-primary"
+                style={{ width: `${totalMs ? ((before + elapsed) / totalMs) * 100 : 0}%` }}
+              />
+              {/* chapter dividers */}
+              {durations.slice(0, -1).map((_, i) => {
+                const at = durations.slice(0, i + 1).reduce((a, b) => a + b, 0);
+                return (
                   <span
-                    className="block h-full rounded-full bg-primary"
-                    style={{ width: i < index ? "100%" : i === index ? `${(elapsed / duration) * 100}%` : "0%" }}
+                    key={i}
+                    className="absolute top-0 h-full w-0.5 -translate-x-1/2 bg-background/70"
+                    style={{ left: `${(at / totalMs) * 100}%` }}
                   />
-                </span>
-              </button>
-            ))}
+                );
+              })}
+              <span
+                className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow transition-opacity group-hover/bar:opacity-100"
+                style={{ left: `${totalMs ? ((before + elapsed) / totalMs) * 100 : 0}%`, opacity: scrubbing ? 1 : undefined }}
+              />
+            </div>
           </div>
+
 
           <div className="mt-2 flex items-center gap-2 text-white">
             <button
