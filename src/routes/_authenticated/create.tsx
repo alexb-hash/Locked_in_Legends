@@ -202,17 +202,33 @@ function CreatePage() {
 
       {!running && (
         <>
-          <div className="flex items-center gap-3">
-            <Button asChild variant="ghost" size="icon" className="press rounded-xl">
-              <Link to="/home" aria-label="Back to dashboard">
-                <ArrowLeft className="size-4" />
-              </Link>
-            </Button>
-            <div>
-              <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">Create a series</h1>
-              <p className="text-sm text-muted-foreground">Four quick steps and Studly films the rest.</p>
+          <Button asChild variant="ghost" size="icon" className="press rounded-xl">
+            <Link to="/home" aria-label="Back to dashboard">
+              <ArrowLeft className="size-4" />
+            </Link>
+          </Button>
+
+          <div className="cta-sheen mt-4 overflow-hidden rounded-3xl border border-primary/25 bg-card/70 backdrop-blur-xl">
+            <div className="relative bg-[linear-gradient(135deg,oklch(0.55_0.15_302/0.55),oklch(0.66_0.13_322/0.35)_48%,transparent)] p-6 sm:p-8">
+              <div className="relative z-[2] flex items-start gap-4">
+                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-white/12 text-foreground ring-1 ring-white/20">
+                  <Clapperboard className="size-6" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
+                    Studly Studios
+                  </p>
+                  <h1 className="mt-1 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+                    Create a series
+                  </h1>
+                  <p className="mt-1.5 text-sm text-muted-foreground">
+                    Four quick steps — your topic, your material, your cast. Studly films the rest.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
+
 
           <div className="mt-7 flex items-center gap-2">
             {STEPS.map((label, i) => (
