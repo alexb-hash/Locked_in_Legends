@@ -48,6 +48,7 @@ export function PresenterStage({
   // falls back to the built-in illustrated anchor instead of flashing a broken frame.
   const [broken, setBroken] = useState<Record<string, true>>({});
 
+  const framesKey = JSON.stringify(frames);
   const poses = useMemo(() => {
     const ok = (u?: string | null) => (u && !broken[u] ? u : undefined);
     const closed = ok(frames.mouth_closed);
@@ -73,30 +74,22 @@ export function PresenterStage({
       blink: ok(frames.blink) ?? "",
       gesture: ok(frames.gesture) ?? "",
     };
-  }, [broken, frames]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [broken, framesKey]);
 
   const layers = useMemo(
     () => [...new Set([poses.closed, poses.mid, poses.open, poses.blink, poses.gesture].filter(Boolean))],
     [poses],
   );
 
-  // Preload every pose so the first swap never flashes an empty frame.
-  const [ready, setReady] = useState(false);
+  // Warm the cache once per pose set; the stacked layers themselves are what render.
+  const layersKey = layers.join("|");
   useEffect(() => {
-    if (!layers.length) {
-      setReady(true);
-      return;
-    }
-    let left = layers.length;
-    layers.forEach((u) => {
+    for (const u of layersKey.split("|").filter(Boolean)) {
       const img = new Image();
-      img.onload = img.onerror = () => {
-        left -= 1;
-        if (left <= 0) setReady(true);
-      };
       img.src = u;
-    });
-  }, [layers]);
+    }
+  }, [layersKey]);
 
   const look = useMemo(() => {
     const t = frame / FPS;
@@ -178,7 +171,7 @@ export function PresenterStage({
               onError={() => setBroken((b) => (b[u] ? b : { ...b, [u]: true }))}
               className={cn(
                 "absolute inset-0 h-full w-full object-cover object-top transition-opacity duration-[45ms] ease-linear",
-                ready && u === look.active ? "opacity-100" : "opacity-0",
+                u === look.active ? "opacity-100" : "opacity-0",
               )}
               draggable={false}
             />
