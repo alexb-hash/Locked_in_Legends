@@ -578,7 +578,9 @@ function Landing() {
       <Ambience density={20} />
 
       <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-6 sm:px-8">
-        <StudlyLogo className="h-9" />
+        <Link to="/team" aria-label="About the team" className="press rounded-xl">
+          <StudlyLogo className="h-9" />
+        </Link>
         <nav className="flex items-center gap-2">
           <Button asChild variant="ghost" className="press rounded-full text-sm font-semibold">
             <Link to="/login">Log in</Link>
@@ -618,7 +620,9 @@ function Landing() {
 
       <footer className="relative mx-auto w-full max-w-6xl px-5 pb-10 pt-4 sm:px-8">
         <div className="flex flex-col items-center gap-2 border-t border-border pt-6 text-center">
-          <StudlyLogo className="h-7" />
+          <Link to="/team" aria-label="About the team" className="press rounded-xl">
+            <StudlyLogo className="h-7" />
+          </Link>
           <p className="text-xs text-muted-foreground">The Netflix of studying. Built for the curious.</p>
         </div>
       </footer>

@@ -15,6 +15,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as TeamRouteImport } from './routes/team'
 import { Route as AuthenticatedCastRouteImport } from './routes/_authenticated/cast'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedCreateRouteImport } from './routes/_authenticated/create'
@@ -53,6 +54,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TeamRoute = TeamRouteImport.update({
+  id: '/team',
+  path: '/team',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedCastRoute = AuthenticatedCastRouteImport.update({
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/team': typeof TeamRoute
   '/cast': typeof AuthenticatedCastRoute
   '/chat': typeof AuthenticatedChatRoute
   '/create': typeof AuthenticatedCreateRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/team': typeof TeamRoute
   '/cast': typeof AuthenticatedCastRoute
   '/chat': typeof AuthenticatedChatRoute
   '/create': typeof AuthenticatedCreateRoute
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/team': typeof TeamRoute
   '/_authenticated/cast': typeof AuthenticatedCastRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/create': typeof AuthenticatedCreateRoute
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/team'
     | '/cast'
     | '/chat'
     | '/create'
@@ -186,6 +196,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/team'
     | '/cast'
     | '/chat'
     | '/create'
@@ -204,6 +215,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/team'
     | '/_authenticated/cast'
     | '/_authenticated/chat'
     | '/_authenticated/create'
@@ -223,6 +235,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  TeamRoute: typeof TeamRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -267,6 +280,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/team': {
+      id: '/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof TeamRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/cast': {
@@ -378,6 +398,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  TeamRoute: TeamRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
