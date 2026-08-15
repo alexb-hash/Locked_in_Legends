@@ -4,6 +4,29 @@ import { cn } from "@/lib/utils";
 
 const FPS = 60;
 
+/**
+ * Natural blink envelope: eyes stay open for a randomised 3.2–6.4s beat, then close over ~70ms and
+ * reopen over ~120ms. The lid never fully replaces the face (peaks at 0.9) so it reads as a blink
+ * rather than a frame swap, and the timing is derived from the playhead so it can't strobe.
+ */
+function blink(t: number) {
+  const beat = 4.6;
+  const i = Math.floor(t / beat);
+  const seed = Math.abs(Math.sin(i * 127.1 + 11.3) * 43758.5453) % 1;
+  const start = i * beat + 0.4 + seed * (beat - 1.2);
+  const local = t - start;
+  const close = 0.07;
+  const hold = 0.03;
+  const open = 0.12;
+  if (local < 0 || local > close + hold + open) return 0;
+  if (local < close) return ease(local / close) * 0.9;
+  if (local < close + hold) return 0.9;
+  return (1 - ease((local - close - hold) / open)) * 0.9;
+}
+
+const ease = (x: number) => x * x * (3 - 2 * x);
+
+
 export type PresenterFrames = Partial<Record<"mouth_closed" | "mouth_mid" | "mouth_open" | "blink" | "gesture", string>>;
 
 /**
