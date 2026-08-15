@@ -14,6 +14,10 @@ import {
   Users,
 } from "lucide-react";
 
+import presenterClosed from "@/assets/presenter-demo-closed.jpg";
+import presenterMid from "@/assets/presenter-demo-mid.jpg";
+import presenterOpen from "@/assets/presenter-demo-open.jpg";
+import sceneBackdrop from "@/assets/scene-demo-backdrop.jpg";
 import { Ambience } from "@/components/motion/Ambience";
 import { Floaty, RevealItem, ScrollReveal, ScrollRevealGroup } from "@/components/motion/Reveal";
 import { StudlyLogo } from "@/components/brand/StudlyLogo";
@@ -299,7 +303,7 @@ const STEPS = [
   {
     n: 2,
     title: "Cast your characters",
-    body: "Name a tutor, add a reference photo, and Studly keeps them consistent across every episode.",
+    body: "Name a tutor and add a reference photo. Studly draws its own illustrated version of them — pose set and all — so the likeness stays consistent without ever using your photo on screen.",
     icons: [Users],
     mock: (
       <div className="glass-card flex items-center gap-3 p-4">
@@ -321,8 +325,8 @@ const STEPS = [
   },
   {
     n: 3,
-    title: "Press play",
-    body: "Episodes auto-generate with a cinematic player, pop-up quizzes, and captions. Then quiz, flashcards, and Susu take over.",
+    title: "Press play — it broadcasts itself",
+    body: "Your cast broadcasts the lesson on a 24fps illustrated stage — talking, blinking, synced captions, pop-up quizzes. No slides to click. Then flashcards and Susu take over.",
     icons: [Clapperboard],
     mock: (
       <div className="relative mx-auto h-52 w-full max-w-sm sm:h-56">
