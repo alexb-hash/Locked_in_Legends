@@ -382,8 +382,10 @@ function WatchPage() {
                 await handleAnswer(quiz, answer, correct, ms);
               }}
               onClose={() => {
-                setQuiz(null);
+                // Clear the pause gate before moving to the next cut. The quiz's exit animation must
+                // never be allowed to re-arm it, otherwise playback stays permanently paused.
                 setQuizArrived(false);
+                setQuiz(null);
                 if (index + 1 < total) setIndex((i) => i + 1);
                 else void finish();
               }}
@@ -1312,17 +1314,27 @@ function QuizPopup({
 
   return (
     <motion.div
+      variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 }, exit: { opacity: 0 } }}
       initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      animate="visible"
+      exit="exit"
       className="fixed inset-0 z-50 grid place-items-center bg-background/70 p-5 backdrop-blur-md"
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        variants={{
+          hidden: { opacity: 0, scale: 0.9, y: 20 },
+          visible: { opacity: 1, scale: 1, y: 0 },
+          exit: { opacity: 0, scale: 0.95, y: 10 },
+        }}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
         transition={{ type: "spring", stiffness: 320, damping: 24 }}
-        onAnimationComplete={onArrived}
+        onAnimationComplete={(phase) => {
+          // Motion also fires this callback after the exit transition. Only the completed entrance
+          // may pause playback; otherwise closing a quiz immediately pauses the resumed lesson.
+          if (phase === "visible") onArrived();
+        }}
         className="w-full max-w-lg rounded-3xl border border-border/60 bg-card/90 p-6 shadow-glow-sm backdrop-blur-xl sm:p-8"
       >
         <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-primary">
