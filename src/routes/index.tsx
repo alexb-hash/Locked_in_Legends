@@ -129,6 +129,16 @@ function HeroPreview() {
   const camScale = 1.06 + Math.sin(f / 225) * 0.03;
   const camX = Math.sin(f / 300) * 8;
 
+  // Demo mouth: walk the caption's words on the 60fps clock so the lips match the line on screen.
+  const demoMouth = (() => {
+    const words = splitWords(caption);
+    if (words.length === 0) return 0;
+    const perWord = 22; // frames per word at 60fps
+    const i = Math.floor((f / perWord) % words.length);
+    const p = ((f % perWord) / perWord) * 1.25;
+    return p > 1 ? 0 : mouthForWord(words[i]!.text, p);
+  })();
+
   return (
     <Floaty className="mt-28 sm:mt-40" amount={10}>
       <div
