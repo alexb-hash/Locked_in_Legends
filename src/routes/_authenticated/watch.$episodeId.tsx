@@ -928,10 +928,20 @@ function PlayerStage({
             />
 
             <div className="min-w-0 flex-1 origin-left will-change-transform" style={camera}>
-              <p className="text-[clamp(0.6rem,1.1vw,0.8rem)] font-semibold uppercase tracking-[0.2em] text-primary">
+              <p className={cn(
+                "font-semibold uppercase tracking-[0.2em] text-primary",
+                fullscreen
+                  ? "text-[clamp(0.85rem,1.4vw,1.25rem)]"
+                  : "text-[clamp(0.6rem,1.1vw,0.8rem)]",
+              )}>
                 Scene {Math.min(index + 1, slides.length)}
               </p>
-              <h1 className="mt-3 font-display text-[clamp(1.2rem,2.9vw,2.3rem)] font-bold leading-[1.1] tracking-tight">
+              <h1 className={cn(
+                "mt-3 font-display font-bold leading-[1.1] tracking-tight",
+                fullscreen
+                  ? "text-[clamp(1.6rem,3.6vw,3.6rem)]"
+                  : "text-[clamp(1.2rem,2.9vw,2.3rem)]",
+              )}>
                 {slide?.title ?? "Loading…"}
               </h1>
               <ul className="mt-[3%] space-y-[1.6%]">
