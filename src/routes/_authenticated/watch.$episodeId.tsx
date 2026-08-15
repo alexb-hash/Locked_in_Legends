@@ -1,7 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, ArrowRight, Check, Flame, Sparkles, Timer, Trophy, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Flame,
+  Maximize,
+  Minimize,
+  Pause,
+  Play,
+  SkipBack,
+  SkipForward,
+  Sparkles,
+  Timer,
+  Trophy,
+  X,
+} from "lucide-react";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Ambience } from "@/components/motion/Ambience";
