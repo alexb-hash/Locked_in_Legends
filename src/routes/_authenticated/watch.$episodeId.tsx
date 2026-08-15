@@ -442,6 +442,8 @@ function PlayerStage({
         setElapsed((prev) => {
           const next = prev + steps * FRAME_MS;
           if (next >= duration) {
+            // Hold the cut open while the script is still being read so nothing gets clipped.
+            if (narrating.current) return duration;
             onEnded();
             return duration;
           }
