@@ -545,6 +545,27 @@ function PlayerStage({
     [seekToMs, totalMs],
   );
 
+  /** Hold-and-drag scrubbing: window listeners keep tracking the pointer even if it leaves the bar. */
+  const startScrub = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.button !== 0 && e.pointerType === "mouse") return;
+      e.preventDefault();
+      setScrubbing(true);
+      seekFromPointer(e.clientX);
+      const move = (ev: PointerEvent) => seekFromPointer(ev.clientX);
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        window.removeEventListener("pointercancel", up);
+        setScrubbing(false);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+      window.addEventListener("pointercancel", up);
+    },
+    [seekFromPointer],
+  );
+
   const active = playing && !paused && !scrubbing && slides.length > 0;
 
   // Broadcast clock: the playhead only ever lands on whole 60fps frames (16.67ms),
@@ -683,7 +704,7 @@ function PlayerStage({
     const take = script.slice(offset);
     // While the viewer is dragging the scrubber the voice stays silent; the take is (re)started from
     // the released position so audio can never keep running ahead of the picture.
-    if (!armed || !take || scrubbing) {
+    if (!armed || !take || scrubbing || !active) {
       synth?.cancel();
       setSpeaking(false);
       return;
@@ -763,20 +784,22 @@ function PlayerStage({
       spokenWord.current = null;
       setSpeaking(false);
     };
-  }, [armed, script, narrationStart, rate, scrubbing, voiceOn]);
+  }, [active, armed, script, narrationStart, rate, scrubbing, voiceOn]);
 
 
 
-  // Pausing suspends the same take rather than cancelling it, so resuming continues mid-sentence.
+  // Pausing cuts the voice instantly (pause() lags by a word in most engines) and remembers the
+  // word it stopped on, so pressing play again picks the take back up from exactly there.
   useEffect(() => {
+    if (active) return;
     const synth = typeof window === "undefined" ? null : window.speechSynthesis;
-    if (!synth || !voiceOn) return;
-    if (active) {
-      if (synth.paused) synth.resume();
-    } else if (synth.speaking && !synth.paused) {
-      synth.pause();
-    }
-  }, [active, voiceOn]);
+    synth?.cancel();
+    spokenWord.current = null;
+    setSpeaking(false);
+    setNarrationStart((prev) => (spokenChar > prev ? spokenChar : prev));
+    // spokenChar is only read at the moment playback stops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
 
   useEffect(
     () => () => {
@@ -1025,16 +1048,7 @@ function PlayerStage({
             aria-valuemin={0}
             aria-valuemax={Math.round(totalMs / 1000)}
             aria-valuenow={Math.round((before + elapsed) / 1000)}
-            onPointerDown={(e) => {
-              e.currentTarget.setPointerCapture(e.pointerId);
-              setScrubbing(true);
-              seekFromPointer(e.clientX);
-            }}
-            onPointerMove={(e) => {
-              if (scrubbing) seekFromPointer(e.clientX);
-            }}
-            onPointerUp={() => setScrubbing(false)}
-            onPointerCancel={() => setScrubbing(false)}
+            onPointerDown={startScrub}
             className="group/bar relative cursor-pointer touch-none py-2"
           >
             <div className="relative h-1.5 rounded-full bg-white/25 transition-all group-hover/bar:h-2.5">
