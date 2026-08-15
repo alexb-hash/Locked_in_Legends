@@ -722,13 +722,13 @@ function PlayerStage({
     }
 
     synth.cancel();
-    const utter = new SpeechSynthesisUtterance(script);
+    const utter = new SpeechSynthesisUtterance(take);
     utter.rate = speechRate;
     utter.pitch = 1.02;
     utter.onstart = () => setSpeaking(true);
     utter.onboundary = (event) => {
       if (event.name && event.name !== "word") return;
-      const rest = script.slice(event.charIndex);
+      const rest = take.slice(event.charIndex);
       const text = (event.charLength ? rest.slice(0, event.charLength) : rest.split(/\s/)[0]) ?? "";
       if (!text.trim()) return;
       spokenWord.current = {
@@ -736,7 +736,7 @@ function PlayerStage({
         start: performance.now(),
         dur: estimateWordMs(text, speechRate),
       };
-      setSpokenChar(event.charIndex);
+      setSpokenChar(event.charIndex + offset);
     };
     utter.onend = () => {
       spokenWord.current = null;
@@ -754,7 +754,8 @@ function PlayerStage({
       spokenWord.current = null;
       setSpeaking(false);
     };
-  }, [armed, script, rate, voiceOn]);
+  }, [armed, script, narrationStart, rate, voiceOn]);
+
 
   // Pausing suspends the same take rather than cancelling it, so resuming continues mid-sentence.
   useEffect(() => {
