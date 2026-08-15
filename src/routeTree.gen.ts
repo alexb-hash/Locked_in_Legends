@@ -19,6 +19,7 @@ import { Route as AuthenticatedCastRouteImport } from './routes/_authenticated/c
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedCreateRouteImport } from './routes/_authenticated/create'
 import { Route as AuthenticatedEpisodesRouteImport } from './routes/_authenticated/episodes'
+import { Route as AuthenticatedFlashcardsRouteImport } from './routes/_authenticated/flashcards'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedLeaguesRouteImport } from './routes/_authenticated/leagues'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
@@ -74,6 +75,11 @@ const AuthenticatedEpisodesRoute = AuthenticatedEpisodesRouteImport.update({
   path: '/episodes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFlashcardsRoute = AuthenticatedFlashcardsRouteImport.update({
+  id: '/flashcards',
+  path: '/flashcards',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof AuthenticatedChatRoute
   '/create': typeof AuthenticatedCreateRoute
   '/episodes': typeof AuthenticatedEpisodesRoute
+  '/flashcards': typeof AuthenticatedFlashcardsRoute
   '/home': typeof AuthenticatedHomeRoute
   '/leagues': typeof AuthenticatedLeaguesRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/chat': typeof AuthenticatedChatRoute
   '/create': typeof AuthenticatedCreateRoute
   '/episodes': typeof AuthenticatedEpisodesRoute
+  '/flashcards': typeof AuthenticatedFlashcardsRoute
   '/home': typeof AuthenticatedHomeRoute
   '/leagues': typeof AuthenticatedLeaguesRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/create': typeof AuthenticatedCreateRoute
   '/_authenticated/episodes': typeof AuthenticatedEpisodesRoute
+  '/_authenticated/flashcards': typeof AuthenticatedFlashcardsRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/leagues': typeof AuthenticatedLeaguesRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
@@ -164,6 +173,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/create'
     | '/episodes'
+    | '/flashcards'
     | '/home'
     | '/leagues'
     | '/profile'
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/create'
     | '/episodes'
+    | '/flashcards'
     | '/home'
     | '/leagues'
     | '/profile'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chat'
     | '/_authenticated/create'
     | '/_authenticated/episodes'
+    | '/_authenticated/flashcards'
     | '/_authenticated/home'
     | '/_authenticated/leagues'
     | '/_authenticated/profile'
@@ -285,6 +297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEpisodesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/flashcards': {
+      id: '/_authenticated/flashcards'
+      path: '/flashcards'
+      fullPath: '/flashcards'
+      preLoaderRoute: typeof AuthenticatedFlashcardsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/home': {
       id: '/_authenticated/home'
       path: '/home'
@@ -328,6 +347,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedCreateRoute: typeof AuthenticatedCreateRoute
   AuthenticatedEpisodesRoute: typeof AuthenticatedEpisodesRoute
+  AuthenticatedFlashcardsRoute: typeof AuthenticatedFlashcardsRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedLeaguesRoute: typeof AuthenticatedLeaguesRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
@@ -340,6 +360,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedCreateRoute: AuthenticatedCreateRoute,
   AuthenticatedEpisodesRoute: AuthenticatedEpisodesRoute,
+  AuthenticatedFlashcardsRoute: AuthenticatedFlashcardsRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedLeaguesRoute: AuthenticatedLeaguesRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
