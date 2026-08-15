@@ -486,35 +486,86 @@ function PlayerStage({
   }, [bullets, duration, frameTime, revealed, showTakeaway, slide]);
 
   /**
-   * The presenter speaks the script line the playhead is on. Speech drives the mouth cycle;
-   * with voice muted the mouth still articulates while the line is on screen.
+   * The presenter speaks the script line the playhead is on. Real word-boundary events drive the
+   * mouth, so articulation matches the words being read. With voice muted the same words are walked
+   * at an estimated reading pace.
    */
+  const spokenWord = useRef<{ text: string; start: number; dur: number } | null>(null);
+
   useEffect(() => {
     const synth = typeof window === "undefined" ? null : window.speechSynthesis;
+    const speechRate = Math.min(2, 0.98 * rate);
+    spokenWord.current = null;
     if (!active || !caption) {
       synth?.cancel();
       setSpeaking(false);
       return;
     }
+
+    // Muted: walk the line's words on an estimated clock so the mouth still matches the text.
     if (!voiceOn || !synth) {
       setSpeaking(true);
-      return;
+      const words = splitWords(caption);
+      let i = 0;
+      let timer = 0;
+      const step = () => {
+        const word = words[i];
+        if (!word) {
+          spokenWord.current = null;
+          return;
+        }
+        const dur = estimateWordMs(word.text, speechRate);
+        spokenWord.current = { text: word.text, start: performance.now(), dur };
+        i += 1;
+        timer = window.setTimeout(step, dur + 60);
+      };
+      step();
+      return () => {
+        window.clearTimeout(timer);
+        spokenWord.current = null;
+      };
     }
+
     synth.cancel();
     const utter = new SpeechSynthesisUtterance(caption);
-    utter.rate = Math.min(2, 0.98 * rate);
+    utter.rate = speechRate;
     utter.pitch = 1.02;
     utter.onstart = () => setSpeaking(true);
-    utter.onend = () => setSpeaking(false);
-    utter.onerror = () => setSpeaking(false);
+    utter.onboundary = (event) => {
+      if (event.name && event.name !== "word") return;
+      const rest = caption.slice(event.charIndex);
+      const text = (event.charLength ? rest.slice(0, event.charLength) : rest.split(/\s/)[0]) ?? "";
+      if (!text.trim()) return;
+      spokenWord.current = { text, start: performance.now(), dur: estimateWordMs(text, speechRate) };
+    };
+    utter.onend = () => {
+      spokenWord.current = null;
+      setSpeaking(false);
+    };
+    utter.onerror = () => {
+      spokenWord.current = null;
+      setSpeaking(false);
+    };
     synth.speak(utter);
     return () => {
       synth.cancel();
+      spokenWord.current = null;
       setSpeaking(false);
     };
   }, [active, caption, rate, voiceOn]);
 
   useEffect(() => () => window.speechSynthesis?.cancel(), []);
+
+  /** Mouth openness for the current frame, derived from the word actually being spoken. */
+  const mouth = useMemo(() => {
+    void globalFrame;
+    const current = spokenWord.current;
+    if (!active || !current) return 0;
+    const p = (performance.now() - current.start) / current.dur;
+    if (p < 0 || p > 1) return 0;
+    return mouthForWord(current.text, p);
+  }, [active, globalFrame]);
+
 
 
   const nudgeUi = useCallback(() => {
