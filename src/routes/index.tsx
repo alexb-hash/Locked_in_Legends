@@ -92,7 +92,7 @@ function HeroPreview() {
   }, [paused]);
 
   return (
-    <Floaty className="mt-16" amount={10}>
+    <Floaty className="mt-28 sm:mt-40" amount={10}>
       <div
         className="glass-card glow-ring mx-auto max-w-2xl overflow-hidden p-0"
         onMouseEnter={() => setPaused(true)}
