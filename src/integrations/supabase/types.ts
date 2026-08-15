@@ -997,8 +997,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      award_xp: {
-        Args: { _amount: number; _kind: string; _source_key?: string }
+      award_xp_for: {
+        Args: {
+          _amount: number
+          _kind: string
+          _source_key?: string
+          _user_id: string
+        }
         Returns: {
           awarded: number
           current_streak: number
