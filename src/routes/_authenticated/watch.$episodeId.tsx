@@ -120,26 +120,26 @@ function WatchPage() {
           .order("order_index", { ascending: true }),
       ]);
       // The on-air presenter is drawn from AI-generated pose art, never from the uploaded photo.
-      let presenter: { name: string; frames: PresenterFrames } | null = null;
+      // If a series has no generated art yet, the presenter still goes on air with the built-in
+      // illustrated anchor so the broadcast never silently loses its character.
+      let presenter: { name: string; frames: PresenterFrames } = { name: "Susu", frames: {} };
       if (episode?.series_id) {
-        const { data: cast } = await supabase
-          .from("series_characters")
-          .select("character_id, characters(name)")
-          .eq("series_id", episode.series_id);
-        const { data: art } = await supabase
-          .from("character_frames")
-          .select("character_id, kind, url")
-          .eq("series_id", episode.series_id);
-        for (const row of cast ?? []) {
-          const r = row as { character_id: string; characters: { name: string | null } | null };
-          const mine = (art ?? []).filter((f) => f.character_id === r.character_id);
-          if (!mine.length) continue;
+        const [{ data: cast }, { data: art }] = await Promise.all([
+          supabase.from("series_characters").select("character_id, characters(name)").eq("series_id", episode.series_id),
+          supabase.from("character_frames").select("character_id, kind, url").eq("series_id", episode.series_id),
+        ]);
+        const rows = (cast ?? []) as { character_id: string; characters: { name: string | null } | null }[];
+        const withArt = rows.find((r) => (art ?? []).some((f) => f.character_id === r.character_id));
+        const chosen = withArt ?? rows[0];
+        if (chosen) {
           const frames: PresenterFrames = {};
-          for (const f of mine) frames[f.kind as keyof PresenterFrames] = f.url;
-          presenter = { name: r.characters?.name ?? "Presenter", frames };
-          break;
+          for (const f of (art ?? []).filter((f) => f.character_id === chosen.character_id)) {
+            frames[f.kind as keyof PresenterFrames] = f.url;
+          }
+          presenter = { name: chosen.characters?.name ?? "Presenter", frames };
         }
       }
+
       return { episode, slides: (slides ?? []) as Slide[], questions: (questions ?? []) as Question[], presenter };
 
     },
