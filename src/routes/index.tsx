@@ -14,6 +14,9 @@ import {
   Users,
 } from "lucide-react";
 
+import castIris from "@/assets/cast/cast-iris.webp.asset.json";
+import castLex from "@/assets/cast/cast-lex.webp.asset.json";
+import castMo from "@/assets/cast/cast-mo.jpeg.asset.json";
 import presenterClosed from "@/assets/presenter-demo-closed.jpg";
 import presenterMid from "@/assets/presenter-demo-mid.jpg";
 import presenterOpen from "@/assets/presenter-demo-open.jpg";
