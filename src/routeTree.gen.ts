@@ -15,6 +15,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as AuthenticatedCastRouteImport } from './routes/_authenticated/cast'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedEpisodesRouteImport } from './routes/_authenticated/episodes'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
@@ -51,6 +52,11 @@ const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCastRoute = AuthenticatedCastRouteImport.update({
+  id: '/cast',
+  path: '/cast',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   id: '/chat',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/cast': typeof AuthenticatedCastRoute
   '/chat': typeof AuthenticatedChatRoute
   '/episodes': typeof AuthenticatedEpisodesRoute
   '/home': typeof AuthenticatedHomeRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/cast': typeof AuthenticatedCastRoute
   '/chat': typeof AuthenticatedChatRoute
   '/episodes': typeof AuthenticatedEpisodesRoute
   '/home': typeof AuthenticatedHomeRoute
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/_authenticated/cast': typeof AuthenticatedCastRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/episodes': typeof AuthenticatedEpisodesRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/cast'
     | '/chat'
     | '/episodes'
     | '/home'
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/cast'
     | '/chat'
     | '/episodes'
     | '/home'
@@ -171,6 +182,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/_authenticated/cast'
     | '/_authenticated/chat'
     | '/_authenticated/episodes'
     | '/_authenticated/home'
@@ -233,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/cast': {
+      id: '/_authenticated/cast'
+      path: '/cast'
+      fullPath: '/cast'
+      preLoaderRoute: typeof AuthenticatedCastRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/chat': {
       id: '/_authenticated/chat'
       path: '/chat'
@@ -286,6 +305,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCastRoute: typeof AuthenticatedCastRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedEpisodesRoute: typeof AuthenticatedEpisodesRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
@@ -296,6 +316,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCastRoute: AuthenticatedCastRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedEpisodesRoute: AuthenticatedEpisodesRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
