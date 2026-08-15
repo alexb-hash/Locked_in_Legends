@@ -50,6 +50,8 @@ export const Route = createFileRoute("/_authenticated/create")({
 });
 
 type CastRow = { key: string; name: string; role: string; files: File[]; savedId?: string };
+type SavedChar = { id: string; name: string; role: string; image: string | null };
+
 
 const STAGES = [
   "Writing the shooting script",
