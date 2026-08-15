@@ -150,33 +150,39 @@ export type Database = {
       }
       episode_questions: {
         Row: {
-          correct_index: number
+          answer_text: string | null
+          correct_index: number | null
           created_at: string
           episode_id: string
           explanation: string
           id: string
+          kind: string
           options: Json
           order_index: number
           prompt: string
           seconds: number
         }
         Insert: {
-          correct_index?: number
+          answer_text?: string | null
+          correct_index?: number | null
           created_at?: string
           episode_id: string
           explanation?: string
           id?: string
+          kind?: string
           options?: Json
           order_index?: number
           prompt: string
           seconds?: number
         }
         Update: {
-          correct_index?: number
+          answer_text?: string | null
+          correct_index?: number | null
           created_at?: string
           episode_id?: string
           explanation?: string
           id?: string
+          kind?: string
           options?: Json
           order_index?: number
           prompt?: string
@@ -353,6 +359,56 @@ export type Database = {
             columns: ["deck_id"]
             isOneToOne: false
             referencedRelation: "flashcard_decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generation_jobs: {
+        Row: {
+          created_at: string
+          episode_titles: Json
+          episodes_done: number
+          error: string | null
+          id: string
+          owner_id: string
+          progress: number
+          series_id: string | null
+          stage: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          episode_titles?: Json
+          episodes_done?: number
+          error?: string | null
+          id?: string
+          owner_id: string
+          progress?: number
+          series_id?: string | null
+          stage?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          episode_titles?: Json
+          episodes_done?: number
+          error?: string | null
+          id?: string
+          owner_id?: string
+          progress?: number
+          series_id?: string | null
+          stage?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generation_jobs_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "series"
             referencedColumns: ["id"]
           },
         ]
@@ -766,6 +822,7 @@ export type Database = {
           owner_id: string
           series_id: string | null
           size_bytes: number | null
+          source_url: string | null
           text_content: string | null
         }
         Insert: {
@@ -778,6 +835,7 @@ export type Database = {
           owner_id: string
           series_id?: string | null
           size_bytes?: number | null
+          source_url?: string | null
           text_content?: string | null
         }
         Update: {
@@ -790,6 +848,7 @@ export type Database = {
           owner_id?: string
           series_id?: string | null
           size_bytes?: number | null
+          source_url?: string | null
           text_content?: string | null
         }
         Relationships: [
