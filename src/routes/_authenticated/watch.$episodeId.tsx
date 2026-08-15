@@ -23,6 +23,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Ambience } from "@/components/motion/Ambience";
+import { PresenterCanvas } from "@/components/player/PresenterCanvas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
