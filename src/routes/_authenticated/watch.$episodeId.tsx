@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
+import { estimateWordMs, mouthForWord, splitWords } from "@/lib/viseme";
 import { supabase } from "@/integrations/supabase/client";
 import { awardXp, pop, XP } from "@/lib/learning";
 import { cn } from "@/lib/utils";
