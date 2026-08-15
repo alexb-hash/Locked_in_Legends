@@ -108,9 +108,27 @@ function WatchPage() {
           .eq("episode_id", episodeId)
           .order("order_index", { ascending: true }),
       ]);
-      return { episode, slides: (slides ?? []) as Slide[], questions: (questions ?? []) as Question[] };
+      // The cast member who anchors the broadcast: their reference photo drives the live presenter.
+      let presenter: { name: string; src: string } | null = null;
+      if (episode?.series_id) {
+        const { data: cast } = await supabase
+          .from("series_characters")
+          .select("characters(name, image_urls)")
+          .eq("series_id", episode.series_id);
+        for (const row of cast ?? []) {
+          const c = (row as { characters: { name: string | null; image_urls: unknown } | null }).characters;
+          const urls = Array.isArray(c?.image_urls) ? (c!.image_urls as unknown[]) : [];
+          const first = urls.find((u): u is string => typeof u === "string" && u.length > 0);
+          if (first) {
+            presenter = { name: c?.name ?? "Presenter", src: first };
+            break;
+          }
+        }
+      }
+      return { episode, slides: (slides ?? []) as Slide[], questions: (questions ?? []) as Question[], presenter };
     },
   });
+
 
   const slides = data?.slides ?? [];
   const questions = data?.questions ?? [];
