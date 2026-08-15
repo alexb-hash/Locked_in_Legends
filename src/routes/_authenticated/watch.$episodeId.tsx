@@ -175,12 +175,18 @@ function WatchPage() {
   const total = slides.length;
   const slide = slides[index];
 
-  // Which slide each pop quiz interrupts: spread across the episode, last one at the end.
+  // Spread quizzes through the lesson while reserving teaching scenes after the final question.
+  // Dividing by questions + 1 (rather than questions) prevents the last quiz from being pinned to
+  // the final frame, where "Keep watching" would otherwise have nowhere to resume.
   const quizAt = useMemo(() => {
     const map = new Map<number, Question>();
     if (!total || questions.length === 0) return map;
     questions.forEach((q, i) => {
-      let at = Math.min(total - 1, Math.round(((i + 1) * total) / questions.length) - 1);
+      const lastInterruptibleScene = total > 1 ? total - 2 : 0;
+      let at = Math.min(
+        lastInterruptibleScene,
+        Math.max(0, Math.round(((i + 1) * total) / (questions.length + 1)) - 1),
+      );
       // Never drop a question by overwriting a slot: shift it to the next free scene, then backwards.
       while (map.has(at) && at < total - 1) at += 1;
       while (map.has(at) && at > 0) at -= 1;
@@ -472,6 +478,8 @@ function PlayerStage({
   const speechRun = useRef(0);
   /** Falls back to the deterministic word clock if the browser voice drops unexpectedly. */
   const [speechFailed, setSpeechFailed] = useState(false);
+  /** Detect a quiz-to-player transition so browser narration is explicitly re-armed. */
+  const wasPaused = useRef(paused);
 
 
   const slide = slides[index];
@@ -584,6 +592,18 @@ function PlayerStage({
   );
 
   const active = playing && !paused && !scrubbing && slides.length > 0;
+
+  useEffect(() => {
+    const resumedFromQuiz = wasPaused.current && !paused;
+    wasPaused.current = paused;
+    if (!resumedFromQuiz) return;
+    // A quiz pauses by cancelling the utterance. Some browsers leave their speech engine in a
+    // failed/paused state afterward, so clear that state and force normal playback to resume.
+    speechRun.current += 1;
+    window.speechSynthesis?.cancel();
+    setSpeechFailed(false);
+    setPlaying(true);
+  }, [paused]);
 
   // Broadcast clock: the playhead only ever lands on whole 60fps frames (16.67ms),
   // so every text reveal, caption and camera move is quantised to the same frame grid.
