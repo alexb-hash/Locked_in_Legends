@@ -159,7 +159,11 @@ function CreatePage() {
     setProgress(6);
     try {
       const named = cast.filter((c) => c.name.trim());
-      const savedCast: { id?: string; name: string; role?: string }[] = [];
+      const savedCast: { id?: string; name: string; role?: string }[] = pickedIds
+        .map((id) => savedChars.find((c) => c.id === id))
+        .filter((c): c is SavedChar => Boolean(c))
+        .map((c) => ({ id: c.id, name: c.name, role: c.role }));
+
       for (const row of named) {
         const uploaded = await uploadCastPhotos(user.id, row.files);
         const { data } = await supabase
