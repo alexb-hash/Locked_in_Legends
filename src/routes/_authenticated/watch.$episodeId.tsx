@@ -683,7 +683,7 @@ function PlayerStage({
     const take = script.slice(offset);
     // While the viewer is dragging the scrubber the voice stays silent; the take is (re)started from
     // the released position so audio can never keep running ahead of the picture.
-    if (!armed || !take || scrubbing) {
+    if (!armed || !take || scrubbing || !active) {
       synth?.cancel();
       setSpeaking(false);
       return;
@@ -763,20 +763,22 @@ function PlayerStage({
       spokenWord.current = null;
       setSpeaking(false);
     };
-  }, [armed, script, narrationStart, rate, scrubbing, voiceOn]);
+  }, [active, armed, script, narrationStart, rate, scrubbing, voiceOn]);
 
 
 
-  // Pausing suspends the same take rather than cancelling it, so resuming continues mid-sentence.
+  // Pausing cuts the voice instantly (pause() lags by a word in most engines) and remembers the
+  // word it stopped on, so pressing play again picks the take back up from exactly there.
   useEffect(() => {
+    if (active) return;
     const synth = typeof window === "undefined" ? null : window.speechSynthesis;
-    if (!synth || !voiceOn) return;
-    if (active) {
-      if (synth.paused) synth.resume();
-    } else if (synth.speaking && !synth.paused) {
-      synth.pause();
-    }
-  }, [active, voiceOn]);
+    synth?.cancel();
+    spokenWord.current = null;
+    setSpeaking(false);
+    setNarrationStart((prev) => (spokenChar > prev ? spokenChar : prev));
+    // spokenChar is only read at the moment playback stops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
 
   useEffect(
     () => () => {
