@@ -410,6 +410,15 @@ function PlayerStage({
 
   const showTakeaway = elapsed > duration * 0.72;
 
+  /** Subtitle line that follows the playhead. */
+  const caption = useMemo(() => {
+    if (!slide) return "";
+    if (elapsed < duration * 0.18) return slide.title;
+    if (showTakeaway && slide.takeaway) return slide.takeaway;
+    return bullets[Math.max(0, revealed - 1)] ?? slide.title;
+  }, [bullets, duration, elapsed, revealed, showTakeaway, slide]);
+
+
   const nudgeUi = useCallback(() => {
     setUiVisible(true);
     if (hideTimer.current) window.clearTimeout(hideTimer.current);
