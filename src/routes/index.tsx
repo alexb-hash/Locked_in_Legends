@@ -578,7 +578,9 @@ function Landing() {
       <Ambience density={20} />
 
       <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-6 sm:px-8">
-        <StudlyLogo className="h-9" />
+        <Link to="/team" aria-label="About the team" className="press rounded-xl">
+          <StudlyLogo className="h-9" />
+        </Link>
         <nav className="flex items-center gap-2">
           <Button asChild variant="ghost" className="press rounded-full text-sm font-semibold">
             <Link to="/login">Log in</Link>
