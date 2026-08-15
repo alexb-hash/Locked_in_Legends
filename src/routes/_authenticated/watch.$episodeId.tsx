@@ -503,6 +503,7 @@ function PlayerStage({
   const [spokenChar, setSpokenChar] = useState(0);
   /** True once the full scene script has been read out — the cut cannot end before this. */
   const [narrationDone, setNarrationDone] = useState(false);
+  narrating.current = Boolean(script) && !narrationDone;
 
   const spokenWord = useRef<{ text: string; start: number; dur: number } | null>(null);
 
@@ -510,6 +511,13 @@ function PlayerStage({
     setSpokenChar(0);
     setNarrationDone(false);
   }, [script]);
+
+  // The playhead can reach the end of the cut before the script finishes; once the last word is
+  // read, move on immediately so nothing is ever cut off mid-sentence.
+  useEffect(() => {
+    if (!active || !narrationDone) return;
+    if (elapsed >= duration - FRAME_MS) onEnded();
+  }, [active, duration, elapsed, narrationDone, onEnded]);
 
   useEffect(() => {
     const synth = typeof window === "undefined" ? null : window.speechSynthesis;
