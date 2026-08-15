@@ -67,14 +67,37 @@ export function PresenterStage({
         <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_0%,oklch(0.28_0.06_300/0.55),transparent_65%)]" />
 
         {portrait ? (
-          <img
-            src={portrait}
-            alt={`${name}, the selected presenter`}
-            onError={() => setBroken((current) => ({ ...current, [portrait]: true }))}
-            className="absolute inset-0 h-full w-full object-cover object-top will-change-transform"
-            style={portraitStyle}
-            draggable={false}
-          />
+          <div className="absolute inset-0 will-change-transform" style={portraitStyle}>
+            <img
+              src={portrait}
+              alt={`${name}, the selected presenter`}
+              onError={() => setBroken((current) => ({ ...current, [portrait]: true }))}
+              className="absolute inset-0 h-full w-full object-cover object-top"
+              draggable={false}
+            />
+            {midLayer ? (
+              <img
+                src={midLayer}
+                alt=""
+                aria-hidden
+                onError={() => setBroken((current) => ({ ...current, [midLayer]: true }))}
+                className="absolute inset-0 h-full w-full object-cover object-top"
+                style={{ opacity: mouthOpacity(0.12) }}
+                draggable={false}
+              />
+            ) : null}
+            {openLayer ? (
+              <img
+                src={openLayer}
+                alt=""
+                aria-hidden
+                onError={() => setBroken((current) => ({ ...current, [openLayer]: true }))}
+                className="absolute inset-0 h-full w-full object-cover object-top"
+                style={{ opacity: mouthOpacity(0.55) }}
+                draggable={false}
+              />
+            ) : null}
+          </div>
         ) : (
           <div className="absolute inset-0 grid place-items-center px-4 text-center">
             <div>
