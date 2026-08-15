@@ -12,9 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { signInWithIdentifier } from "@/lib/auth.functions";
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    redirect: typeof search["redirect"] === "string" ? (search["redirect"] as string) : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } =>
+    typeof search["redirect"] === "string" ? { redirect: search["redirect"] as string } : {},
   head: () => ({
     meta: [
       { title: "Log in to Studly — Your AI study companion" },
