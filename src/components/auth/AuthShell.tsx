@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { StudlyLogo } from "@/components/brand/StudlyLogo";
