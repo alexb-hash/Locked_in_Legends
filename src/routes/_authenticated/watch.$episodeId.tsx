@@ -662,19 +662,22 @@ function PlayerStage({
   // utterance), the scene must still finish instead of hanging on the last frame forever.
   useEffect(() => {
     if (!script || narrationDone || !armed) return;
-    const budget = splitWords(script).reduce(
+    const budget = splitWords(script.slice(narrationStart)).reduce(
       (sum, w) => sum + estimateWordMs(w.text, Math.min(2, 0.98 * rate)) + 40,
       0,
     );
     const timer = window.setTimeout(() => setNarrationDone(true), budget + 8000);
     return () => window.clearTimeout(timer);
-  }, [armed, narrationDone, rate, script]);
+  }, [armed, narrationDone, narrationStart, rate, script]);
 
   useEffect(() => {
     const synth = typeof window === "undefined" ? null : window.speechSynthesis;
     const speechRate = Math.min(2, 0.98 * rate);
     spokenWord.current = null;
-    if (!armed || !script) {
+    // The take starts at the scrubbed word, so rewinding the timeline rewinds the voice with it.
+    const offset = Math.max(0, Math.min(script.length, narrationStart));
+    const take = script.slice(offset);
+    if (!armed || !take) {
       synth?.cancel();
       setSpeaking(false);
       return;
@@ -684,7 +687,8 @@ function PlayerStage({
     if (!voiceOn || !synth) {
       synth?.cancel();
       setSpeaking(true);
-      const words = splitWords(script);
+      const words = splitWords(take).map((w) => ({ ...w, index: w.index + offset }));
+
       let i = 0;
       let timer = 0;
       let cancelled = false;
