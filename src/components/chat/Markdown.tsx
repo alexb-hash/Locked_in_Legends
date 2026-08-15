@@ -109,9 +109,10 @@ export function Markdown({ content }: { content: string }) {
             </ListTag>
           );
         }
+        const paragraph = block as { lines: string[] };
         return (
           <p key={key}>
-            {block.lines.map((line, i) => (
+            {paragraph.lines.map((line, i) => (
               <Fragment key={`${key}-${i}`}>
                 {i > 0 && <br />}
                 {inline(line, `${key}-${i}`)}
