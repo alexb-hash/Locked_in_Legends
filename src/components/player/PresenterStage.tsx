@@ -42,6 +42,7 @@ export function PresenterStage({
   // the mouth reads as moving without any hard frame swap.
   const midLayer = ok(frames.mouth_mid) !== portrait ? ok(frames.mouth_mid) : undefined;
   const openLayer = ok(frames.mouth_open) !== portrait ? ok(frames.mouth_open) : undefined;
+  const blinkLayer = ok(frames.blink) !== portrait ? ok(frames.blink) : undefined;
 
   const t = frame / FPS;
   const breath = Math.sin(t * 1.05);
@@ -61,6 +62,9 @@ export function PresenterStage({
   // The mid-speech layer carries most of the articulation; the wide-open layer only ever peeks in.
   const midOpacity = Math.max(0, Math.min(1, env / 0.34)).toFixed(3);
   const openOpacity = Math.max(0, Math.min(0.55, (env - 0.44) / 0.5)).toFixed(3);
+  // Blink: a soft close/open every few seconds, deterministic on the 60fps grid so it never strobes.
+  const blinkOpacity = blink(t).toFixed(3);
+
 
 
   return (
