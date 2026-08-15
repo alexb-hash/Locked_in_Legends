@@ -1,19 +1,21 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
+  ArrowRight,
   ChevronsLeft,
   ChevronsRight,
+  Clapperboard,
   Flame,
   LayoutGrid,
   Layers,
   ListChecks,
   LogOut,
-  PlusCircle,
   Settings,
   Sparkles,
   Trophy,
   User,
   Users,
 } from "lucide-react";
+
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { toast } from "sonner";
 
