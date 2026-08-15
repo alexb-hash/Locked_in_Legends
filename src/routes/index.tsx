@@ -1,9 +1,47 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { Layers, PlayCircle, Sparkles, Target, Trophy, Wand2 } from "lucide-react";
 
 import { Ambience } from "@/components/motion/Ambience";
 import { Floaty, Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { Button } from "@/components/ui/button";
+
+const ROTATING_SUBTITLES = [
+  "Your notes, but actually watchable.",
+  "Your friends, but they're teaching you.",
+  "Your group chat, but somehow educational.",
+  "Your revision, but make it a whole episode.",
+  "Studying, but you actually wanna press play.",
+];
+
+function RotatingSubtitle() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setIndex((prev) => (prev + 1) % ROTATING_SUBTITLES.length);
+    }, 3600);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="relative mx-auto mt-4 h-[1.2em] max-w-xl">
+      <AnimatePresence mode="wait">
+        <motion.p
+          key={index}
+          initial={{ opacity: 0, filter: "blur(14px)", y: 8 }}
+          animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+          exit={{ opacity: 0, filter: "blur(14px)", y: -8 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="font-display text-2xl font-light tracking-tight text-muted-foreground sm:text-3xl"
+        >
+          {ROTATING_SUBTITLES[index]}
+        </motion.p>
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/")({
   head: () => ({
