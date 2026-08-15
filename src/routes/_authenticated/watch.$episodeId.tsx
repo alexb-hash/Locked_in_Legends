@@ -368,6 +368,7 @@ function WatchPage() {
       slides={slides}
       index={index}
       paused={quizArrived}
+      quizActive={Boolean(quiz)}
       onSeek={(i) => setIndex(i)}
       onEnded={advance}
       quiz={
@@ -442,6 +443,7 @@ function PlayerStage({
   slides,
   index,
   paused,
+  quizActive,
   onSeek,
   onEnded,
   quiz,
@@ -451,6 +453,7 @@ function PlayerStage({
   slides: Slide[];
   index: number;
   paused: boolean;
+  quizActive: boolean;
   onSeek: (index: number) => void;
   onEnded: () => void;
   quiz: React.ReactNode;
@@ -916,6 +919,7 @@ function PlayerStage({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (quizActive) return;
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (e.code === "Space" || e.key === "k") {
@@ -937,7 +941,7 @@ function PlayerStage({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [index, nudgeUi, onEnded, onSeek, toggleFullscreen]);
+  }, [index, nudgeUi, onEnded, onSeek, quizActive, toggleFullscreen]);
 
   return (
     <div
