@@ -275,24 +275,42 @@ const STEPS = [
     body: "Episodes auto-generate with a cinematic player, pop-up quizzes, and captions. Then quiz, flashcards, and Susu take over.",
     icons: [Clapperboard],
     mock: (
-      <div className="glass-card relative aspect-[16/9] overflow-hidden p-0">
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(circle at 30% 30%, oklch(0.63 0.115 300 / 0.3), transparent 60%), var(--color-surface-2)",
-          }}
-        />
-        <div className="relative flex h-full items-center justify-center">
-          <span className="grid size-12 place-items-center rounded-full bg-white/15 backdrop-blur-md ring-1 ring-white/30">
-            <Play className="size-5 fill-white text-white" />
-          </span>
-        </div>
-        <p className="absolute bottom-3 left-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          Episode 1
-        </p>
+      <div className="relative mx-auto h-52 w-full max-w-sm sm:h-56">
+        {[
+          { label: "Episode 3", rot: -7, x: -26, y: 16, z: 10, hue: 200, scale: 0.9, blur: true },
+          { label: "Episode 2", rot: 4, x: 18, y: 8, z: 20, hue: 320, scale: 0.95, blur: true },
+          { label: "Episode 1", rot: -1, x: 0, y: -10, z: 30, hue: 300, scale: 1, blur: false },
+        ].map((card) => (
+          <div
+            key={card.label}
+            className="absolute inset-x-0 top-1/2 mx-auto aspect-[16/9] w-[88%] overflow-hidden rounded-2xl ring-1 ring-border shadow-[0_20px_50px_-20px_rgba(0,0,0,0.7)]"
+            style={{
+              zIndex: card.z,
+              transform: `translateY(calc(-50% + ${card.y}px)) translateX(${card.x}px) rotate(${card.rot}deg) scale(${card.scale})`,
+            }}
+          >
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `radial-gradient(circle at 30% 30%, oklch(0.63 0.115 ${card.hue} / 0.35), transparent 60%), var(--color-surface-2)`,
+                filter: card.blur ? "blur(1.5px) brightness(0.75)" : undefined,
+              }}
+            />
+            {!card.blur && (
+              <div className="relative flex h-full items-center justify-center">
+                <span className="grid size-12 place-items-center rounded-full bg-white/15 backdrop-blur-md ring-1 ring-white/30">
+                  <Play className="size-5 fill-white text-white" />
+                </span>
+              </div>
+            )}
+            <p className="absolute bottom-3 left-3 text-[0.65rem] font-semibold uppercase tracking-widest text-muted-foreground">
+              {card.label}
+            </p>
+          </div>
+        ))}
       </div>
     ),
+
   },
 ];
 
