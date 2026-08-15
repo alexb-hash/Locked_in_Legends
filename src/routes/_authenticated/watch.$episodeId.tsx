@@ -403,6 +403,25 @@ function formatTime(ms: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+/**
+ * Character index of the word that sits at `frac` (0..1) through the script, so a scrub lands the
+ * narration on a word boundary instead of mid-syllable.
+ */
+function wordStartAt(script: string, frac: number) {
+  if (!script) return 0;
+  const clamped = Math.max(0, Math.min(0.995, frac));
+  const target = Math.floor(script.length * clamped);
+  const words = splitWords(script);
+  let at = 0;
+  for (const w of words) {
+    if (w.index > target) break;
+    at = w.index;
+  }
+  return at;
+}
+
+
+
 function PlayerStage({
   title,
   presenter,
@@ -435,8 +454,13 @@ function PlayerStage({
   const hideTimer = useRef<number | null>(null);
   const barRef = useRef<HTMLDivElement | null>(null);
   const pendingElapsed = useRef<number | null>(null);
+  /** Scene fraction the narration must resume from after scrubbing into a different scene. */
+  const pendingStartFrac = useRef<number | null>(null);
+  /** Character offset the current take starts from (moves when the viewer scrubs). */
+  const [narrationStart, setNarrationStart] = useState(0);
   /** True while the scene's script is still being read — the cut is held open until it finishes. */
   const narrating = useRef(true);
+
 
   const slide = slides[index];
   const durations = useMemo(() => slides.map(slideDuration), [slides]);
@@ -471,7 +495,12 @@ function PlayerStage({
     setElapsed(start);
   }, [index]);
 
-  /** Seek anywhere on the runtime, like dragging a video scrubber. */
+  /**
+   * Seek anywhere on the runtime, like dragging a video scrubber. Scrubbing also rewinds the
+   * narration: the voice restarts from the word that sits at the new playhead, so audio, captions
+   * and lip-sync all land on the moment the viewer scrubbed to instead of continuing where the
+   * previous take left off.
+   */
   const seekToMs = useCallback(
     (ms: number) => {
       if (totalMs <= 0 || durations.length === 0) return;
@@ -485,8 +514,13 @@ function PlayerStage({
             elapsedRef.current = within;
             endedRef.current = false;
             setElapsed(within);
+            const at = wordStartAt(scriptRef.current, d ? within / d : 0);
+            setNarrationStart(at);
+            setSpokenChar(at);
+            setNarrationDone(false);
           } else {
             pendingElapsed.current = within;
+            pendingStartFrac.current = d ? within / d : 0;
             onSeek(i);
           }
           return;
@@ -496,6 +530,7 @@ function PlayerStage({
     },
     [durations, index, onSeek, totalMs],
   );
+
 
   const seekFromPointer = useCallback(
     (clientX: number) => {
@@ -586,6 +621,10 @@ function PlayerStage({
     return out;
   }, [bullets, slide]);
   const script = useMemo(() => scriptLines.map((l) => l.text).join(". "), [scriptLines]);
+  /** Read by the seek handler, which runs outside render. */
+  const scriptRef = useRef(script);
+  scriptRef.current = script;
+
 
   /** Character offset the voice has reached, so subtitles follow the words actually being read. */
   const [spokenChar, setSpokenChar] = useState(0);
@@ -604,9 +643,13 @@ function PlayerStage({
   }, [active]);
 
   useEffect(() => {
-    setSpokenChar(0);
+    const at = pendingStartFrac.current !== null ? wordStartAt(script, pendingStartFrac.current) : 0;
+    pendingStartFrac.current = null;
+    setNarrationStart(at);
+    setSpokenChar(at);
     setNarrationDone(false);
   }, [script]);
+
 
   // The playhead can reach the end of the cut before the script finishes; once the last word is
   // read, move on immediately so nothing is ever cut off mid-sentence.
@@ -619,29 +662,36 @@ function PlayerStage({
   // utterance), the scene must still finish instead of hanging on the last frame forever.
   useEffect(() => {
     if (!script || narrationDone || !armed) return;
-    const budget = splitWords(script).reduce(
+    const budget = splitWords(script.slice(narrationStart)).reduce(
       (sum, w) => sum + estimateWordMs(w.text, Math.min(2, 0.98 * rate)) + 40,
       0,
     );
     const timer = window.setTimeout(() => setNarrationDone(true), budget + 8000);
     return () => window.clearTimeout(timer);
-  }, [armed, narrationDone, rate, script]);
+  }, [armed, narrationDone, narrationStart, rate, script]);
 
   useEffect(() => {
     const synth = typeof window === "undefined" ? null : window.speechSynthesis;
     const speechRate = Math.min(2, 0.98 * rate);
     spokenWord.current = null;
-    if (!armed || !script) {
+    // The take starts at the scrubbed word, so rewinding the timeline rewinds the voice with it.
+    const offset = Math.max(0, Math.min(script.length, narrationStart));
+    const take = script.slice(offset);
+    // While the viewer is dragging the scrubber the voice stays silent; the take is (re)started from
+    // the released position so audio can never keep running ahead of the picture.
+    if (!armed || !take || scrubbing) {
       synth?.cancel();
       setSpeaking(false);
       return;
     }
 
+
     // Muted: walk the whole script's words on an estimated clock so the mouth still matches text.
     if (!voiceOn || !synth) {
       synth?.cancel();
       setSpeaking(true);
-      const words = splitWords(script);
+      const words = splitWords(take).map((w) => ({ ...w, index: w.index + offset }));
+
       let i = 0;
       let timer = 0;
       let cancelled = false;
@@ -675,13 +725,13 @@ function PlayerStage({
     }
 
     synth.cancel();
-    const utter = new SpeechSynthesisUtterance(script);
+    const utter = new SpeechSynthesisUtterance(take);
     utter.rate = speechRate;
     utter.pitch = 1.02;
     utter.onstart = () => setSpeaking(true);
     utter.onboundary = (event) => {
       if (event.name && event.name !== "word") return;
-      const rest = script.slice(event.charIndex);
+      const rest = take.slice(event.charIndex);
       const text = (event.charLength ? rest.slice(0, event.charLength) : rest.split(/\s/)[0]) ?? "";
       if (!text.trim()) return;
       spokenWord.current = {
@@ -689,7 +739,7 @@ function PlayerStage({
         start: performance.now(),
         dur: estimateWordMs(text, speechRate),
       };
-      setSpokenChar(event.charIndex);
+      setSpokenChar(event.charIndex + offset);
     };
     utter.onend = () => {
       spokenWord.current = null;
@@ -702,12 +752,16 @@ function PlayerStage({
       setNarrationDone(true);
     };
     synth.speak(utter);
+    // A pause left over from the scrub (or a paused engine) would swallow the new take.
+    if (synth.paused) synth.resume();
     return () => {
       synth.cancel();
       spokenWord.current = null;
       setSpeaking(false);
     };
-  }, [armed, script, rate, voiceOn]);
+  }, [armed, script, narrationStart, rate, scrubbing, voiceOn]);
+
+
 
   // Pausing suspends the same take rather than cancelling it, so resuming continues mid-sentence.
   useEffect(() => {
