@@ -82,7 +82,9 @@ function SeriesPage() {
               variant="button"
               onDeleted={() => navigate({ to: "/episodes" })}
             />
+            </div>
           )}
+
         </div>
 
         <div
