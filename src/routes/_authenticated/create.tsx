@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadCastPhotos, uploadMaterial } from "@/lib/cast";
+import { generateCharacterArt, generateSceneArt } from "@/lib/art.functions";
 import { generateSeriesCover } from "@/lib/covers.functions";
 import { buildEpisode, startGeneration } from "@/lib/generate.functions";
 import { cn } from "@/lib/utils";
@@ -80,6 +81,8 @@ function CreatePage() {
   const start = useServerFn(startGeneration);
   const build = useServerFn(buildEpisode);
   const makeCover = useServerFn(generateSeriesCover);
+  const makeCast = useServerFn(generateCharacterArt);
+  const makeScenes = useServerFn(generateSceneArt);
 
   const [step, setStep] = useState(0);
   const [topic, setTopic] = useState("");
