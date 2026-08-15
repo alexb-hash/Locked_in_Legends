@@ -77,9 +77,10 @@ function LeaguesPage() {
             .in("id", ids)
         : { data: [] as never[] };
 
-      const { data: streaks } = ids.length
-        ? await supabase.from("streaks").select("user_id, current_streak").in("user_id", ids)
+      const { data: streaks } = user?.id
+        ? await supabase.from("streaks").select("user_id, current_streak").eq("user_id", user.id)
         : { data: [] as never[] };
+
 
       return { leagues: leagues ?? [], season, entries, people: people ?? [], streaks: streaks ?? [], leagueId };
     },
