@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import {
+  BrainCircuit,
   Clapperboard,
   FileText,
   Flame,
@@ -9,7 +10,10 @@ import {
   Link2,
   Pause,
   Play,
+  Layers,
+  ListChecks,
   Sparkles,
+  Trophy,
   Type,
   Users,
 } from "lucide-react";
@@ -22,7 +26,17 @@ import presenterMid from "@/assets/presenter-demo-mid.jpg";
 import presenterOpen from "@/assets/presenter-demo-open.jpg";
 import sceneBackdrop from "@/assets/scene-demo-backdrop.jpg";
 import { Ambience } from "@/components/motion/Ambience";
-import { Floaty, RevealItem, ScrollReveal, ScrollRevealGroup } from "@/components/motion/Reveal";
+import {
+  Floaty,
+  MaskItem,
+  MaskReveal,
+  MaskRevealGroup,
+  RevealItem,
+  ScrollReveal,
+  ScrollRevealGroup,
+  WordReveal,
+} from "@/components/motion/Reveal";
+import { Parallax } from "@/components/motion/Parallax";
 import { StudlyLogo } from "@/components/brand/StudlyLogo";
 import { Markdown } from "@/components/chat/Markdown";
 import { Button } from "@/components/ui/button";
@@ -373,34 +387,191 @@ const STEPS = [
 
 function HowItWorks() {
   return (
-    <section className="relative mx-auto w-full max-w-5xl px-5 py-20 sm:px-8">
-      <ScrollReveal className="text-center">
-        <h2 className="font-display text-2xl font-bold sm:text-3xl">From notes to a season in 3 steps</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          No setup, no editing software. Just your study material and a press of a button.
-        </p>
-      </ScrollReveal>
-      <div className="mt-12 space-y-16">
+    <section className="relative mx-auto w-full max-w-6xl px-5 py-24 sm:px-8">
+      <div aria-hidden className="hairline-grid pointer-events-none absolute inset-0 -z-10" />
+
+      <div className="relative max-w-2xl">
+        <MaskReveal from="left">
+          <span className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.2em] text-primary ring-1 ring-primary/30">
+            The pipeline
+          </span>
+        </MaskReveal>
+        <MaskReveal delay={0.08} className="mt-4">
+          <h2 className="font-display text-3xl font-bold leading-[1.05] sm:text-5xl">
+            Notes in.
+            <br />
+            <span className="text-gradient">A whole season out.</span>
+          </h2>
+        </MaskReveal>
+        <ScrollReveal delay={0.18} className="mt-4">
+          <p className="max-w-md text-sm text-muted-foreground sm:text-base">
+            No setup, no editing software. Three moves and your material is broadcasting itself.
+          </p>
+        </ScrollReveal>
+      </div>
+
+      <div className="relative mt-16 space-y-14 sm:space-y-24">
         {STEPS.map((step, i) => {
           const flip = i % 2 === 1;
           return (
-            <ScrollReveal key={step.n}>
-              <div className="grid items-center gap-6 sm:grid-cols-2 sm:gap-10">
-                <div className={flip ? "sm:order-2" : ""}>
-                  <div className="mb-3 flex items-center gap-3">
-                    <span className="grid size-8 place-items-center rounded-full bg-primary/15 font-display text-sm font-bold text-primary ring-1 ring-primary/30">
-                      {step.n}
-                    </span>
-                    <h3 className="font-display text-lg font-semibold">{step.title}</h3>
+            <div key={step.n} className="relative">
+              {/* oversized ghost numeral sitting behind the row */}
+              <span
+                aria-hidden
+                className="ghost-numeral absolute -top-10 z-0 text-[7rem] sm:-top-20 sm:text-[13rem]"
+                style={flip ? { right: "-1.5rem" } : { left: "-1.5rem" }}
+              >
+                {step.n}
+              </span>
+
+              <div
+                className={
+                  "relative z-10 grid items-center gap-6 sm:grid-cols-12 sm:gap-4 " +
+                  (flip ? "" : "")
+                }
+              >
+                <MaskReveal
+                  from={flip ? "right" : "left"}
+                  className={
+                    flip
+                      ? "sm:col-span-5 sm:col-start-8 sm:order-2"
+                      : "sm:col-span-5 sm:col-start-1"
+                  }
+                >
+                  <div className="relative">
+                    <div className="mb-3 flex items-center gap-2 text-primary">
+                      {step.icons.map((Icon, k) => (
+                        <span
+                          key={k}
+                          className="grid size-8 place-items-center rounded-xl bg-primary/12 ring-1 ring-primary/25"
+                        >
+                          <Icon className="size-4" />
+                        </span>
+                      ))}
+                    </div>
+                    <h3 className="font-display text-xl font-bold sm:text-2xl">{step.title}</h3>
+                    <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">{step.body}</p>
                   </div>
-                  <p className="max-w-sm text-sm text-muted-foreground sm:max-w-none">{step.body}</p>
+                </MaskReveal>
+
+                {/* mock breaks out of its column and overlaps the copy edge */}
+                <div
+                  className={
+                    flip
+                      ? "sm:col-span-7 sm:col-start-1 sm:-mr-10 sm:order-1"
+                      : "sm:col-span-7 sm:col-start-6 sm:-ml-10"
+                  }
+                >
+                  <Parallax depth={i === 1 ? 34 : 22} rotate={flip ? -1.2 : 1.2}>
+                    <MaskReveal delay={0.12}>
+                      <div className="tile edge-bleed sheen-sweep grain relative p-4 sm:p-6">
+                        <div
+                          aria-hidden
+                          className="animate-aurora pointer-events-none absolute -right-16 -top-20 size-64 rounded-full blur-3xl"
+                          style={{
+                            background:
+                              "radial-gradient(circle, oklch(0.62 0.175 298 / 0.4), transparent 70%)",
+                            animationDelay: `${i * -5}s`,
+                          }}
+                        />
+                        <div className="relative z-[1]">{step.mock}</div>
+                      </div>
+                    </MaskReveal>
+                  </Parallax>
                 </div>
-                <div className={flip ? "sm:order-1" : ""}>{step.mock}</div>
               </div>
-            </ScrollReveal>
+            </div>
           );
         })}
       </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* 3b. Capability bento — dense, unequal tiles                         */
+/* ------------------------------------------------------------------ */
+
+const CAPABILITIES = [
+  {
+    icon: Clapperboard,
+    title: "Episodes that play themselves",
+    body: "A 24fps illustrated stage, synced captions, no slide clicking.",
+    span: "sm:col-span-7 sm:row-span-2",
+    big: true,
+  },
+  {
+    icon: ListChecks,
+    title: "Pop-up quizzes",
+    body: "MCQ and written, live countdown, explanation on every miss.",
+    span: "sm:col-span-5",
+  },
+  {
+    icon: Layers,
+    title: "Flashcards on tap",
+    body: "Decks generated from the episode you just watched.",
+    span: "sm:col-span-5",
+  },
+  {
+    icon: BrainCircuit,
+    title: "Susu, mid-lesson",
+    body: "One tap from a wrong answer to a Socratic nudge.",
+    span: "sm:col-span-4",
+  },
+  {
+    icon: Trophy,
+    title: "Leagues & XP",
+    body: "Two-week seasons, six tiers, streaks that actually sting.",
+    span: "sm:col-span-4",
+  },
+  {
+    icon: Flame,
+    title: "Streak engine",
+    body: "Show up daily, keep the flame, bank the multiplier.",
+    span: "sm:col-span-4",
+  },
+];
+
+function CapabilityBento() {
+  return (
+    <section className="relative mx-auto w-full max-w-6xl px-5 py-16 sm:px-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <MaskReveal from="left">
+          <h2 className="font-display text-2xl font-bold sm:text-4xl">Everything runs in one loop</h2>
+        </MaskReveal>
+        <ScrollReveal delay={0.1}>
+          <p className="max-w-xs text-sm text-muted-foreground">
+            Watch, get quizzed, get coached, get promoted. Nothing to stitch together.
+          </p>
+        </ScrollReveal>
+      </div>
+
+      <MaskRevealGroup className="mt-8 grid gap-4 sm:grid-cols-12" stagger={0.08}>
+        {CAPABILITIES.map((c) => (
+          <MaskItem key={c.title} className={c.span}>
+            <div className="tile sheen-sweep grain group relative flex h-full flex-col justify-between overflow-hidden p-5 sm:p-6">
+              <div
+                aria-hidden
+                className="animate-aurora pointer-events-none absolute -bottom-24 -left-16 size-56 rounded-full blur-3xl opacity-70"
+                style={{ background: "radial-gradient(circle, oklch(0.62 0.175 298 / 0.32), transparent 70%)" }}
+              />
+              <span className="relative grid size-10 place-items-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/30">
+                <c.icon className="size-5" />
+              </span>
+              <div className="relative mt-6">
+                <h3
+                  className={
+                    "font-display font-bold " + (c.big ? "text-xl sm:text-3xl" : "text-base sm:text-lg")
+                  }
+                >
+                  {c.title}
+                </h3>
+                <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">{c.body}</p>
+              </div>
+            </div>
+          </MaskItem>
+        ))}
+      </MaskRevealGroup>
     </section>
   );
 }
