@@ -685,6 +685,7 @@ export type Database = {
       series: {
         Row: {
           cover_gradient: string | null
+          cover_url: string | null
           created_at: string
           description: string | null
           episode_count: number
@@ -699,6 +700,7 @@ export type Database = {
         }
         Insert: {
           cover_gradient?: string | null
+          cover_url?: string | null
           created_at?: string
           description?: string | null
           episode_count?: number
@@ -713,6 +715,7 @@ export type Database = {
         }
         Update: {
           cover_gradient?: string | null
+          cover_url?: string | null
           created_at?: string
           description?: string | null
           episode_count?: number
