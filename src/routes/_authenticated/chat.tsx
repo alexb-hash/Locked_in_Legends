@@ -2,15 +2,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, Loader2, Plus, Send, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Layers, Loader2, Plus, Send, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Ambience } from "@/components/motion/Ambience";
+import { Markdown } from "@/components/chat/Markdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { saveDeck } from "@/lib/flashcards.functions";
 import { askSusu } from "@/lib/susu.functions";
 import { cn } from "@/lib/utils";
 
@@ -35,7 +37,8 @@ export const Route = createFileRoute("/_authenticated/chat")({
   component: ChatPage,
 });
 
-type Msg = { id: string; role: string; content: string; follow_ups: unknown };
+type Msg = { id: string; role: string; content: string; follow_ups: unknown; metadata: unknown };
+type DeckOffer = { title: string; cards: { front: string; back: string }[] };
 
 function ChatPage() {
   const { q, ctx } = Route.useSearch();
@@ -65,7 +68,7 @@ function ChatPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("chat_messages")
-        .select("id, role, content, follow_ups")
+        .select("id, role, content, follow_ups, metadata")
         .eq("thread_id", threadId!)
         .order("created_at", { ascending: true });
       return (data ?? []) as Msg[];
@@ -106,6 +109,7 @@ function ChatPage() {
         role: "assistant",
         content: res.reply,
         follow_ups: res.followUps,
+        metadata: res.deck ? { deck: res.deck } : {},
       });
       await supabase.from("chat_threads").update({ updated_at: new Date().toISOString() }).eq("id", id);
       return id;
@@ -218,7 +222,8 @@ function ChatPage() {
                   : "border border-border/60 bg-card/70 backdrop-blur-xl",
               )}
             >
-              {m.content}
+              {m.role === "assistant" ? <Markdown content={m.content} /> : m.content}
+              {m.role === "assistant" && <DeckCard metadata={m.metadata} />}
             </motion.div>
           ))}
 
@@ -287,6 +292,58 @@ function ChatPage() {
           </Button>
         </form>
       </div>
+    </div>
+  );
+}
+
+function DeckCard({ metadata }: { metadata: unknown }) {
+  const store = useServerFn(saveDeck);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const deck = (metadata as { deck?: DeckOffer } | null)?.deck;
+  if (!deck?.cards?.length) return null;
+
+  async function add() {
+    setSaving(true);
+    try {
+      await store({ data: { title: deck!.title, source: "susu", cards: deck!.cards } });
+      setSaved(true);
+      toast.success("Deck added to your Flashcards tab.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "The deck could not be saved.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 rounded-2xl border border-primary/30 bg-primary/[0.07] p-4">
+      <div className="flex items-center gap-2.5">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+          <Layers className="size-4" />
+        </span>
+        <div className="min-w-0">
+          <p className="truncate font-display text-sm font-semibold">{deck.title}</p>
+          <p className="text-xs text-muted-foreground">{deck.cards.length} flashcards ready</p>
+        </div>
+      </div>
+      <div className="mt-3 space-y-1.5">
+        {deck.cards.slice(0, 3).map((c) => (
+          <p key={c.front} className="truncate text-xs text-muted-foreground">
+            · {c.front}
+          </p>
+        ))}
+      </div>
+      {saved ? (
+        <Button asChild variant="secondary" className="press mt-4 h-9 w-full rounded-xl text-xs font-semibold">
+          <Link to="/flashcards">Open Flashcards</Link>
+        </Button>
+      ) : (
+        <Button onClick={() => void add()} disabled={saving} className="press mt-4 h-9 w-full rounded-xl text-xs font-semibold">
+          {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Layers className="size-3.5" />}
+          Add to my flashcards
+        </Button>
+      )}
     </div>
   );
 }

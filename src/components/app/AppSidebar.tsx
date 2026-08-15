@@ -29,14 +29,14 @@ type NavItem = {
   key: string;
   label: string;
   icon: ComponentType<{ className?: string }>;
-  to?: "/home" | "/profile" | "/episodes" | "/leagues" | "/create" | "/cast" | "/chat";
+  to?: "/home" | "/profile" | "/episodes" | "/leagues" | "/create" | "/cast" | "/chat" | "/flashcards";
   soon?: boolean;
 };
 
 const NAV: NavItem[] = [
   { key: "home", label: "Home", icon: LayoutGrid, to: "/home" },
   { key: "episodes", label: "Episodes", icon: ListChecks, to: "/episodes" },
-  { key: "flashcards", label: "Flashcards", icon: Layers, soon: true },
+  { key: "flashcards", label: "Flashcards", icon: Layers, to: "/flashcards" },
   { key: "create", label: "Create", icon: PlusCircle, to: "/create" },
   { key: "cast", label: "Cast", icon: Users, to: "/cast" },
   { key: "leagues", label: "Leagues", icon: Trophy, to: "/leagues" },

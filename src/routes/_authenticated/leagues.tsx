@@ -32,6 +32,12 @@ export const Route = createFileRoute("/_authenticated/leagues")({
 
 const PROMOTE_COUNT = 7;
 
+const MEDALS: Record<1 | 2 | 3, string> = {
+  1: "bg-gradient-to-br from-amber-200 to-yellow-500 ring-amber-200/60",
+  2: "bg-gradient-to-br from-slate-100 to-slate-400 ring-slate-200/60",
+  3: "bg-gradient-to-br from-orange-200 to-amber-700 ring-orange-300/50",
+};
+
 function LeaguesPage() {
   const { profile, user } = useAuth();
   const [showRules, setShowRules] = useState(false);
@@ -188,16 +194,35 @@ function LeaguesPage() {
                 promo && !me && "bg-primary/[0.04]",
               )}
             >
-              <span
+              {row.rank <= 3 ? (
+                <span
+                  aria-label={`Rank ${row.rank}`}
+                  className={cn(
+                    "grid size-7 shrink-0 place-items-center rounded-full font-display text-xs font-bold text-background shadow-glow-sm ring-1",
+                    MEDALS[row.rank as 1 | 2 | 3],
+                  )}
+                >
+                  {row.rank}
+                </span>
+              ) : (
+                <span
+                  className={cn(
+                    "w-7 shrink-0 text-center font-display text-base font-bold",
+                    promo ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
+                  {row.rank}
+                </span>
+              )}
+              <Avatar
                 className={cn(
-                  "w-7 shrink-0 text-center font-display text-base font-bold",
-                  promo ? "text-primary" : "text-muted-foreground",
+                  "size-10 shrink-0 ring-1 ring-border/60",
+                  row.rank === 1 && "ring-2 ring-amber-300/70",
+                  row.rank === 2 && "ring-2 ring-slate-300/70",
+                  row.rank === 3 && "ring-2 ring-orange-400/60",
                 )}
               >
-                {row.rank}
-              </span>
-              <Avatar className="size-10 shrink-0 ring-1 ring-border/60">
-                {row.person?.avatar_url && <AvatarImage src={row.person.avatar_url} alt={name} />}
+                {row.person?.avatar_url && <AvatarImage src={row.person.avatar_url} alt={`${name} profile picture`} className="object-cover" />}
                 <AvatarFallback className="text-xs font-semibold">{name.slice(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
               <span className="min-w-0 flex-1">
