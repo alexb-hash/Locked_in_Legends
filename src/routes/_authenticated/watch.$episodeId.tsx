@@ -624,9 +624,13 @@ function PlayerStage({
   }, [active]);
 
   useEffect(() => {
-    setSpokenChar(0);
+    const at = pendingStartFrac.current !== null ? wordStartAt(script, pendingStartFrac.current) : 0;
+    pendingStartFrac.current = null;
+    setNarrationStart(at);
+    setSpokenChar(at);
     setNarrationDone(false);
   }, [script]);
+
 
   // The playhead can reach the end of the cut before the script finishes; once the last word is
   // read, move on immediately so nothing is ever cut off mid-sentence.
