@@ -15,8 +15,12 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as AuthenticatedEpisodesRouteImport } from './routes/_authenticated/episodes'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedLeaguesRouteImport } from './routes/_authenticated/leagues'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedSeriesSeriesIdRouteImport } from './routes/_authenticated/series.$seriesId'
+import { Route as AuthenticatedWatchEpisodeIdRouteImport } from './routes/_authenticated/watch.$episodeId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -47,9 +51,19 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedEpisodesRoute = AuthenticatedEpisodesRouteImport.update({
+  id: '/episodes',
+  path: '/episodes',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLeaguesRoute = AuthenticatedLeaguesRouteImport.update({
+  id: '/leagues',
+  path: '/leagues',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -57,6 +71,18 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSeriesSeriesIdRoute =
+  AuthenticatedSeriesSeriesIdRouteImport.update({
+    id: '/series/$seriesId',
+    path: '/series/$seriesId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedWatchEpisodeIdRoute =
+  AuthenticatedWatchEpisodeIdRouteImport.update({
+    id: '/watch/$episodeId',
+    path: '/watch/$episodeId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -64,8 +90,12 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/episodes': typeof AuthenticatedEpisodesRoute
   '/home': typeof AuthenticatedHomeRoute
+  '/leagues': typeof AuthenticatedLeaguesRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/series/$seriesId': typeof AuthenticatedSeriesSeriesIdRoute
+  '/watch/$episodeId': typeof AuthenticatedWatchEpisodeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -73,8 +103,12 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/episodes': typeof AuthenticatedEpisodesRoute
   '/home': typeof AuthenticatedHomeRoute
+  '/leagues': typeof AuthenticatedLeaguesRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/series/$seriesId': typeof AuthenticatedSeriesSeriesIdRoute
+  '/watch/$episodeId': typeof AuthenticatedWatchEpisodeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -84,8 +118,12 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/_authenticated/episodes': typeof AuthenticatedEpisodesRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
+  '/_authenticated/leagues': typeof AuthenticatedLeaguesRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/series/$seriesId': typeof AuthenticatedSeriesSeriesIdRoute
+  '/_authenticated/watch/$episodeId': typeof AuthenticatedWatchEpisodeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -95,8 +133,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/episodes'
     | '/home'
+    | '/leagues'
     | '/profile'
+    | '/series/$seriesId'
+    | '/watch/$episodeId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -104,8 +146,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/episodes'
     | '/home'
+    | '/leagues'
     | '/profile'
+    | '/series/$seriesId'
+    | '/watch/$episodeId'
   id:
     | '__root__'
     | '/'
@@ -114,8 +160,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/_authenticated/episodes'
     | '/_authenticated/home'
+    | '/_authenticated/leagues'
     | '/_authenticated/profile'
+    | '/_authenticated/series/$seriesId'
+    | '/_authenticated/watch/$episodeId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -171,11 +221,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/episodes': {
+      id: '/_authenticated/episodes'
+      path: '/episodes'
+      fullPath: '/episodes'
+      preLoaderRoute: typeof AuthenticatedEpisodesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/home': {
       id: '/_authenticated/home'
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof AuthenticatedHomeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/leagues': {
+      id: '/_authenticated/leagues'
+      path: '/leagues'
+      fullPath: '/leagues'
+      preLoaderRoute: typeof AuthenticatedLeaguesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/profile': {
@@ -185,17 +249,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/series/$seriesId': {
+      id: '/_authenticated/series/$seriesId'
+      path: '/series/$seriesId'
+      fullPath: '/series/$seriesId'
+      preLoaderRoute: typeof AuthenticatedSeriesSeriesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/watch/$episodeId': {
+      id: '/_authenticated/watch/$episodeId'
+      path: '/watch/$episodeId'
+      fullPath: '/watch/$episodeId'
+      preLoaderRoute: typeof AuthenticatedWatchEpisodeIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedEpisodesRoute: typeof AuthenticatedEpisodesRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
+  AuthenticatedLeaguesRoute: typeof AuthenticatedLeaguesRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedSeriesSeriesIdRoute: typeof AuthenticatedSeriesSeriesIdRoute
+  AuthenticatedWatchEpisodeIdRoute: typeof AuthenticatedWatchEpisodeIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedEpisodesRoute: AuthenticatedEpisodesRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
+  AuthenticatedLeaguesRoute: AuthenticatedLeaguesRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedSeriesSeriesIdRoute: AuthenticatedSeriesSeriesIdRoute,
+  AuthenticatedWatchEpisodeIdRoute: AuthenticatedWatchEpisodeIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

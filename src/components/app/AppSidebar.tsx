@@ -29,17 +29,17 @@ type NavItem = {
   key: string;
   label: string;
   icon: ComponentType<{ className?: string }>;
-  to?: "/home" | "/profile";
+  to?: "/home" | "/profile" | "/episodes" | "/leagues";
   soon?: boolean;
 };
 
 const NAV: NavItem[] = [
   { key: "home", label: "Home", icon: LayoutGrid, to: "/home" },
-  { key: "episodes", label: "Episodes", icon: ListChecks, soon: true },
+  { key: "episodes", label: "Episodes", icon: ListChecks, to: "/episodes" },
   { key: "flashcards", label: "Flashcards", icon: Layers, soon: true },
   { key: "create", label: "Create", icon: PlusCircle, soon: true },
   { key: "cast", label: "Cast", icon: Users, soon: true },
-  { key: "leagues", label: "Leagues", icon: Trophy, soon: true },
+  { key: "leagues", label: "Leagues", icon: Trophy, to: "/leagues" },
   { key: "profile", label: "Profile", icon: User, to: "/profile" },
 ];
 
@@ -111,7 +111,7 @@ export function AppSidebar() {
 
         <nav className="mt-6 flex-1 space-y-1 overflow-y-auto px-3 pb-4">
           {items.map((item) => {
-            const active = item.to ? pathname === item.to : false;
+            const active = item.to ? pathname.startsWith(item.to) : false;
             const content = (
               <span
                 className={cn(

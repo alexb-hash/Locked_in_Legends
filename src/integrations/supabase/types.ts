@@ -887,6 +887,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_xp: {
+        Args: { _amount: number; _kind: string; _source_key?: string }
+        Returns: {
+          awarded: number
+          current_streak: number
+          streak_incremented: boolean
+          total_xp: number
+        }[]
+      }
+      default_league_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
