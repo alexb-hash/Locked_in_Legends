@@ -86,6 +86,9 @@ function CreatePage() {
   const [youtube, setYoutube] = useState("");
   const [materials, setMaterials] = useState<File[]>([]);
   const [cast, setCast] = useState<CastRow[]>([{ key: crypto.randomUUID(), name: "", role: "", files: [] }]);
+  const [savedChars, setSavedChars] = useState<SavedChar[]>([]);
+  const [pickedIds, setPickedIds] = useState<string[]>([]);
+  const [loadingCast, setLoadingCast] = useState(true);
 
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -95,6 +98,32 @@ function CreatePage() {
   const [doneCount, setDoneCount] = useState(0);
   const [seriesId, setSeriesId] = useState<string | null>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    void (async () => {
+      const { data } = await supabase
+        .from("characters")
+        .select("id, name, role_description, image_urls")
+        .eq("owner_id", user.id)
+        .order("created_at", { ascending: false });
+      if (!alive) return;
+      setSavedChars(
+        (data ?? []).map((c) => ({
+          id: c.id,
+          name: c.name,
+          role: c.role_description ?? "",
+          image: (c.image_urls as string[] | null)?.[0] ?? null,
+        })),
+      );
+      setLoadingCast(false);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [user]);
+
 
   useEffect(() => {
     if (!running) return;
