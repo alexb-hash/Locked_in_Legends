@@ -403,6 +403,25 @@ function formatTime(ms: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+/**
+ * Character index of the word that sits at `frac` (0..1) through the script, so a scrub lands the
+ * narration on a word boundary instead of mid-syllable.
+ */
+function wordStartAt(script: string, frac: number) {
+  if (!script) return 0;
+  const clamped = Math.max(0, Math.min(0.995, frac));
+  const target = Math.floor(script.length * clamped);
+  const words = splitWords(script);
+  let at = 0;
+  for (const w of words) {
+    if (w.index > target) break;
+    at = w.index;
+  }
+  return at;
+}
+
+
+
 function PlayerStage({
   title,
   presenter,
