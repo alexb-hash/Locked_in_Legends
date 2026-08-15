@@ -96,11 +96,49 @@ export function AppSidebar() {
           )}
         </div>
 
-        <div className={cn("px-3 pt-5", collapsed && "px-2")}>
+        <div className={cn("space-y-2 px-3 pt-5", collapsed && "px-2")}>
+          {!hidden.includes("create") &&
+            (collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    asChild
+                    className="press cta-studio cta-sheen h-11 w-full justify-center rounded-2xl px-0 hover:brightness-110"
+                  >
+                    <Link to="/create">
+                      <Clapperboard className="relative z-[2] size-[18px] shrink-0" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Create a series</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Button
+                asChild
+                className="press cta-studio cta-sheen h-14 w-full justify-start gap-3 rounded-2xl px-3.5 text-left hover:brightness-110"
+              >
+                <Link to="/create">
+                  <span className="relative z-[2] grid size-9 shrink-0 place-items-center rounded-xl bg-white/15 ring-1 ring-white/25">
+                    <Clapperboard className="size-[18px]" />
+                  </span>
+                  <span className="relative z-[2] min-w-0 flex-1">
+                    <span className="block truncate font-display text-sm font-bold leading-tight">
+                      Create a series
+                    </span>
+                    <span className="block truncate text-[11px] font-medium text-white/75">
+                      Turn any topic into episodes
+                    </span>
+                  </span>
+                  <ArrowRight className="relative z-[2] size-4 shrink-0 opacity-80" />
+                </Link>
+              </Button>
+            ))}
+
           <Button
             asChild
+            variant="ghost"
             className={cn(
-              "press glow-ring h-11 w-full justify-center gap-2 rounded-2xl bg-primary/90 text-sm font-semibold hover:bg-primary",
+              "press h-11 w-full justify-center gap-2 rounded-2xl border border-primary/25 bg-primary/10 text-sm font-semibold text-primary hover:bg-primary/20 hover:text-primary",
               collapsed && "px-0",
             )}
           >
@@ -109,8 +147,8 @@ export function AppSidebar() {
               {!collapsed && "Talk to Susu"}
             </Link>
           </Button>
-
         </div>
+
 
         <nav className="mt-6 flex-1 space-y-1 overflow-y-auto px-3 pb-4">
           {items.map((item) => {
