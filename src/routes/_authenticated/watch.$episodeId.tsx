@@ -642,6 +642,19 @@ function PlayerStage({
             <span className="ml-auto flex items-center gap-2">
               <button
                 type="button"
+                onClick={() => setCaptionsOn((c) => !c)}
+                aria-pressed={captionsOn}
+                aria-label={captionsOn ? "Turn captions off" : "Turn captions on"}
+                className={cn(
+                  "press grid size-9 place-items-center rounded-full hover:bg-white/15",
+                  captionsOn && "bg-white/20 ring-1 ring-white/40",
+                )}
+              >
+                {captionsOn ? <Captions className="size-4" /> : <CaptionsOff className="size-4" />}
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setRate((r) => (r === 1 ? 1.5 : r === 1.5 ? 2 : r === 2 ? 0.75 : 1))}
                 className="press rounded-full bg-white/12 px-2.5 py-1 text-xs font-semibold tabular-nums hover:bg-white/25"
                 aria-label="Playback speed"
