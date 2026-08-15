@@ -26,7 +26,7 @@ function RotatingSubtitle() {
   }, []);
 
   return (
-    <div className="relative mx-auto mt-4 h-[1.2em] max-w-xl">
+    <div className="relative mx-auto mt-4 h-[1.4em] max-w-xl">
       <AnimatePresence mode="wait">
         <motion.p
           key={index}
@@ -34,7 +34,7 @@ function RotatingSubtitle() {
           animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
           exit={{ opacity: 0, filter: "blur(14px)", y: -8 }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="font-display text-2xl font-light tracking-tight text-muted-foreground sm:text-3xl"
+          className="absolute inset-x-0 font-sans text-lg font-light tracking-tight text-muted-foreground sm:text-xl"
         >
           {ROTATING_SUBTITLES[index]}
         </motion.p>
