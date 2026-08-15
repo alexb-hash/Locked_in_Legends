@@ -74,14 +74,28 @@ function EpisodesPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 lg:py-14">
       <Reveal>
-        <p className="text-sm font-medium text-muted-foreground">Your library</p>
-        <h1 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Pick a <span className="text-gradient">series</span>
-        </h1>
-        <p className="mt-3 max-w-xl text-sm text-muted-foreground">
-          Each episode is a handful of slides and a pop-up quiz. Finish one and your streak stays alive.
-        </p>
+        <div className="flex flex-wrap items-end justify-between gap-5">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Your library</p>
+            <h1 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+              Pick a <span className="text-gradient">series</span>
+            </h1>
+            <p className="mt-3 max-w-xl text-sm text-muted-foreground">
+              Each episode is a handful of slides and a pop-up quiz. Finish one and your streak stays alive.
+            </p>
+          </div>
+          <Button
+            asChild
+            className="press cta-studio cta-sheen h-12 shrink-0 gap-2 rounded-2xl px-5 font-semibold hover:brightness-110"
+          >
+            <Link to="/create">
+              <Clapperboard className="relative z-[2] size-[18px]" />
+              <span className="relative z-[2]">Create a series</span>
+            </Link>
+          </Button>
+        </div>
       </Reveal>
+
 
       {isLoading && <p className="mt-10 text-sm text-muted-foreground">Loading your shelves…</p>}
 
