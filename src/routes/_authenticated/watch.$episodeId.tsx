@@ -972,7 +972,12 @@ function PlayerStage({
                   initial={false}
                   animate={showTakeaway ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
                   transition={{ duration: 0.5 }}
-                  className="mt-[3.5%] inline-block rounded-2xl border border-primary/25 bg-primary/10 p-[1.4%] px-4 text-[clamp(0.7rem,1.2vw,0.9rem)] font-medium text-primary"
+                  className={cn(
+                    "mt-[3.5%] inline-block rounded-2xl border border-primary/25 bg-primary/10 p-[1.4%] px-4 font-medium text-primary",
+                    fullscreen
+                      ? "text-[clamp(1rem,1.6vw,1.4rem)]"
+                      : "text-[clamp(0.7rem,1.2vw,0.9rem)]",
+                  )}
                 >
                   Takeaway · {slide.takeaway}
                 </motion.p>
