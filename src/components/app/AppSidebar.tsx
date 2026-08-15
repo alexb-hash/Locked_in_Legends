@@ -25,6 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { StudlyLogo } from "@/components/brand/StudlyLogo";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -94,13 +95,9 @@ export function AppSidebar() {
         )}
       >
         <div className={cn("flex items-center gap-3 px-4 pt-5", collapsed && "justify-center px-0")}>
-          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/30">
-            <Sparkles className="size-5" />
-          </span>
-          {!collapsed && (
-            <span className="font-display text-xl font-bold tracking-tight text-gradient">Studly</span>
-          )}
+          <StudlyLogo className={collapsed ? "h-9" : "h-11"} />
         </div>
+
 
         <div className={cn("space-y-2 px-3 pt-5", collapsed && "px-2")}>
           {!hidden.includes("create") &&
