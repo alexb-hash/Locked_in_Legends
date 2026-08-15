@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { PlayCircle, Sparkles } from "lucide-react";
+import { Clapperboard, PlayCircle, Sparkles } from "lucide-react";
 
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { DeleteSeriesButton } from "@/components/series/DeleteSeriesButton";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
