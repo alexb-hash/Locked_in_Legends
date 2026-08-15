@@ -25,7 +25,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Ambience } from "@/components/motion/Ambience";
-import { PresenterCanvas } from "@/components/player/PresenterCanvas";
+import { PresenterStage } from "@/components/player/PresenterStage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -590,14 +590,25 @@ function PlayerStage({
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
             exit={{ opacity: 0, scale: 1.01, filter: "blur(8px)" }}
             transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 flex flex-col justify-center px-[7%] py-[8%]"
+            className="absolute inset-0 flex items-center gap-[4%] px-[5%] pb-[12%] pt-[5%]"
           >
-            <div className="origin-center will-change-transform" style={camera}>
+            {/* Broadcast anchor: its own column, so it never sits on top of the lesson. */}
+            {presenter && (
+              <PresenterStage
+                src={presenter.src}
+                name={presenter.name}
+                speaking={speaking && active}
+                frame={globalFrame}
+                className="hidden aspect-[3/4] h-full max-h-[78%] shrink-0 sm:block sm:w-[26%]"
+              />
+            )}
+
+            <div className="min-w-0 flex-1 origin-left will-change-transform" style={camera}>
 
               <p className="text-[clamp(0.6rem,1.1vw,0.8rem)] font-semibold uppercase tracking-[0.2em] text-primary">
                 Scene {Math.min(index + 1, slides.length)}
               </p>
-              <h1 className="mt-3 font-display text-[clamp(1.4rem,3.4vw,2.8rem)] font-bold leading-[1.1] tracking-tight">
+              <h1 className="mt-3 font-display text-[clamp(1.2rem,2.9vw,2.3rem)] font-bold leading-[1.1] tracking-tight">
                 {slide?.title ?? "Loading…"}
               </h1>
               <ul className="mt-[3%] space-y-[1.6%]">
@@ -607,7 +618,7 @@ function PlayerStage({
                     initial={false}
                     animate={i < revealed ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 14, filter: "blur(6px)" }}
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="flex gap-3 text-[clamp(0.8rem,1.45vw,1.05rem)] leading-relaxed text-foreground/90"
+                    className="flex gap-3 text-[clamp(0.75rem,1.3vw,1rem)] leading-relaxed text-foreground/90"
                   >
                     <span className="mt-[0.7em] size-1.5 shrink-0 rounded-full bg-primary" />
                     {b}
@@ -619,7 +630,7 @@ function PlayerStage({
                   initial={false}
                   animate={showTakeaway ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
                   transition={{ duration: 0.5 }}
-                  className="mt-[3.5%] inline-block rounded-2xl border border-primary/25 bg-primary/10 p-[1.4%] px-4 text-[clamp(0.75rem,1.3vw,0.95rem)] font-medium text-primary"
+                  className="mt-[3.5%] inline-block rounded-2xl border border-primary/25 bg-primary/10 p-[1.4%] px-4 text-[clamp(0.7rem,1.2vw,0.9rem)] font-medium text-primary"
                 >
                   Takeaway · {slide.takeaway}
                 </motion.p>
@@ -630,15 +641,6 @@ function PlayerStage({
 
         </AnimatePresence>
 
-        {/* Live presenter: the cast face, re-composited every 24fps frame while the lesson plays. */}
-        {presenter && (
-          <PresenterCanvas
-            src={presenter.src}
-            name={presenter.name}
-            speaking={speaking && active}
-            className="absolute right-[4%] top-[6%] z-20 aspect-[3/4] w-[20%] min-w-24 shadow-glow-sm"
-          />
-        )}
 
         {/* Captions */}
         {captionsOn && caption && (
