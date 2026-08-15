@@ -398,23 +398,41 @@ function PlayerStage({
   const before = durations.slice(0, index).reduce((a, b) => a + b, 0);
   const bullets = asStrings(slide?.bullets);
 
+  /** Live playhead mirror, so the clock never reads stale state inside a frame callback. */
+  const elapsedRef = useRef(0);
+  elapsedRef.current = elapsed;
+  /** One scene can only ever end once, no matter how many signals arrive on the same frame. */
+  const endedRef = useRef(false);
+  const endScene = useCallback(() => {
+    if (endedRef.current) return;
+    endedRef.current = true;
+    onEnded();
+  }, [onEnded]);
+
   // Reset the playhead whenever the cut changes (unless we scrubbed into it).
   useEffect(() => {
-    setElapsed(pendingElapsed.current ?? 0);
+    const start = pendingElapsed.current ?? 0;
     pendingElapsed.current = null;
+    elapsedRef.current = start;
+    endedRef.current = false;
+    setElapsed(start);
   }, [index]);
 
   /** Seek anywhere on the runtime, like dragging a video scrubber. */
   const seekToMs = useCallback(
     (ms: number) => {
+      if (totalMs <= 0 || durations.length === 0) return;
       const clamped = Math.max(0, Math.min(totalMs - 1, ms));
       let acc = 0;
       for (let i = 0; i < durations.length; i += 1) {
         const d = durations[i]!;
         if (clamped < acc + d || i === durations.length - 1) {
-          const within = clamped - acc;
-          if (i === index) setElapsed(within);
-          else {
+          const within = Math.max(0, clamped - acc);
+          if (i === index) {
+            elapsedRef.current = within;
+            endedRef.current = false;
+            setElapsed(within);
+          } else {
             pendingElapsed.current = within;
             onSeek(i);
           }
@@ -445,27 +463,31 @@ function PlayerStage({
     let last = performance.now();
     let carry = 0;
     const tick = (now: number) => {
-      carry += (now - last) * rate;
+      // A backgrounded tab can hand back a huge delta; clamp it so playback never jumps a scene.
+      carry += Math.min(250, now - last) * rate;
       last = now;
       const steps = Math.floor(carry / FRAME_MS);
       if (steps > 0) {
         carry -= steps * FRAME_MS;
-        setElapsed((prev) => {
-          const next = prev + steps * FRAME_MS;
-          if (next >= duration) {
-            // Hold the cut open while the script is still being read so nothing gets clipped.
-            if (narrating.current) return duration;
-            onEnded();
-            return duration;
+        const next = elapsedRef.current + steps * FRAME_MS;
+        if (next >= duration) {
+          elapsedRef.current = duration;
+          setElapsed(duration);
+          // Hold the cut open while the script is still being read so nothing gets clipped.
+          if (!narrating.current) {
+            endScene();
+            return;
           }
-          return next;
-        });
+        } else {
+          elapsedRef.current = next;
+          setElapsed(next);
+        }
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [active, duration, onEnded, rate]);
+  }, [active, duration, endScene, rate]);
 
   /** Whole-frame playhead — the single source of truth for every synced overlay. */
   const frame = Math.floor(elapsed / FRAME_MS);
