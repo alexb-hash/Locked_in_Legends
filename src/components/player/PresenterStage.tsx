@@ -52,14 +52,15 @@ export function PresenterStage({
     transform: `translate3d(${(drift * 0.22).toFixed(3)}%, ${(breath * -0.16 * activity).toFixed(3)}%, 0) rotate(${(settle * 0.12).toFixed(3)}deg) scale(${(1.035 + breath * 0.0018 * activity).toFixed(4)})`,
   };
 
-  // Openness comes from the spoken word; it is only low-pass filtered so the jaw has physical
-  // inertia rather than snapping between letters.
+  // Openness comes from the spoken word; it is low-pass filtered so the jaw has physical inertia
+  // rather than snapping between letters, and capped so the mouth never yawns open mid-sentence.
   const smoothed = useRef(0);
-  const target = speaking ? Math.max(0, Math.min(1, mouth ?? 0)) : 0;
-  smoothed.current += (target - smoothed.current) * 0.28;
+  const target = speaking ? Math.max(0, Math.min(0.72, mouth ?? 0)) : 0;
+  smoothed.current += (target - smoothed.current) * 0.22;
   const env = smoothed.current;
-  const mouthOpacity = (level: number) =>
-    Math.max(0, Math.min(1, (env - level) / 0.42)).toFixed(3);
+  // The mid-speech layer carries most of the articulation; the wide-open layer only ever peeks in.
+  const midOpacity = Math.max(0, Math.min(1, env / 0.34)).toFixed(3);
+  const openOpacity = Math.max(0, Math.min(0.55, (env - 0.44) / 0.5)).toFixed(3);
 
 
   return (
