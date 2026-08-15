@@ -96,3 +96,51 @@ export function Floaty({
     </motion.div>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Scroll-triggered variants (marketing / landing sections)            */
+/* ------------------------------------------------------------------ */
+
+/** Blur-in reveal that fires when the block scrolls into view (once). */
+export function ScrollReveal({ children, delay = 0, className, y = 28, once = true, ...rest }: RevealProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, filter: "blur(16px)", y }}
+      whileInView={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+      viewport={{ once, amount: 0.25, margin: "0px 0px -12% 0px" }}
+      transition={{ duration: 0.8, delay, ease: [0.22, 1, 0.36, 1] }}
+      className={cn(className)}
+      {...rest}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/** Staggered container whose <RevealItem> children animate on scroll-in. */
+export function ScrollRevealGroup({
+  children,
+  className,
+  stagger = 0.09,
+  delay = 0,
+}: {
+  children: ReactNode;
+  className?: string;
+  stagger?: number;
+  delay?: number;
+}) {
+  return (
+    <motion.div
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, amount: 0.2 }}
+      variants={{
+        hidden: {},
+        show: { transition: { staggerChildren: stagger, delayChildren: delay } },
+      }}
+      className={cn(className)}
+    >
+      {children}
+    </motion.div>
+  );
+}
