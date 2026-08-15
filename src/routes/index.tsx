@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import {
-  BookOpen,
   Clapperboard,
   FileText,
   Flame,
