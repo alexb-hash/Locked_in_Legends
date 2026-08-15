@@ -298,6 +298,10 @@ function slideDuration(slide: Slide | undefined) {
   return Math.min(26000, Math.max(6500, 2600 + words * 380));
 }
 
+/** Broadcast frame rate: 24fps, i.e. one frame every ~41.67ms. */
+const FPS = 24;
+const FRAME_MS = 1000 / FPS;
+
 function formatTime(ms: number) {
   const s = Math.max(0, Math.round(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -378,45 +382,68 @@ function PlayerStage({
 
   const active = playing && !paused && !scrubbing && slides.length > 0;
 
-
+  // Broadcast clock: the playhead only ever lands on whole 24fps frames (41.67ms),
+  // so every text reveal, caption and camera move is quantised to the same frame grid.
   useEffect(() => {
     if (!active) return;
     let raf = 0;
     let last = performance.now();
+    let carry = 0;
     const tick = (now: number) => {
-      const delta = (now - last) * rate;
+      carry += (now - last) * rate;
       last = now;
-      setElapsed((prev) => {
-        const next = prev + delta;
-        if (next >= duration) {
-          onEnded();
-          return duration;
-        }
-        return next;
-      });
+      const steps = Math.floor(carry / FRAME_MS);
+      if (steps > 0) {
+        carry -= steps * FRAME_MS;
+        setElapsed((prev) => {
+          const next = prev + steps * FRAME_MS;
+          if (next >= duration) {
+            onEnded();
+            return duration;
+          }
+          return next;
+        });
+      }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [active, duration, onEnded, rate]);
 
+  /** Whole-frame playhead — the single source of truth for every synced overlay. */
+  const frame = Math.floor(elapsed / FRAME_MS);
+  const frameTime = frame * FRAME_MS;
+  const globalFrame = Math.floor((before + elapsed) / FRAME_MS);
+  const progress = duration ? Math.min(1, frameTime / duration) : 0;
+
+  /** Camera move, evaluated per frame so it stays locked to the playhead (even when scrubbing). */
+  const camera = useMemo(() => {
+    const t = progress;
+    const sway = Math.sin(globalFrame / (FPS * 2.6));
+    const bob = Math.cos(globalFrame / (FPS * 3.4));
+    return {
+      transform: `scale(${(1 + 0.055 * t).toFixed(4)}) translate3d(${(sway * 0.5).toFixed(3)}%, ${(-1.1 * t + bob * 0.35).toFixed(3)}%, 0)`,
+    };
+  }, [globalFrame, progress]);
+
   // Reveal bullets in time with the voice-over pacing.
   const revealed = useMemo(() => {
     if (bullets.length === 0) return 0;
     const start = duration * 0.18;
     const per = (duration * 0.62) / bullets.length;
-    return Math.min(bullets.length, Math.floor(Math.max(0, elapsed - start) / per) + 1);
-  }, [bullets.length, duration, elapsed]);
+    return Math.min(bullets.length, Math.floor(Math.max(0, frameTime - start) / per) + 1);
+  }, [bullets.length, duration, frameTime]);
 
-  const showTakeaway = elapsed > duration * 0.72;
+  const showTakeaway = frameTime > duration * 0.72;
 
   /** Subtitle line that follows the playhead. */
   const caption = useMemo(() => {
     if (!slide) return "";
-    if (elapsed < duration * 0.18) return slide.title;
+    if (frameTime < duration * 0.18) return slide.title;
     if (showTakeaway && slide.takeaway) return slide.takeaway;
     return bullets[Math.max(0, revealed - 1)] ?? slide.title;
-  }, [bullets, duration, elapsed, revealed, showTakeaway, slide]);
+  }, [bullets, duration, frameTime, revealed, showTakeaway, slide]);
+
 
 
   const nudgeUi = useCallback(() => {
@@ -500,20 +527,17 @@ function PlayerStage({
       >
         <Ambience intensity="bold" className="absolute inset-0" />
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence initial={false}>
           <motion.section
             key={slide?.id ?? index}
-            initial={{ opacity: 0, scale: 1.06, filter: "blur(14px)" }}
+            initial={{ opacity: 0, scale: 1.04, filter: "blur(12px)" }}
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, scale: 1.01, filter: "blur(8px)" }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 flex flex-col justify-center px-[7%] py-[8%]"
           >
-            <motion.div
-              animate={{ scale: [1, 1.03] }}
-              transition={{ duration: duration / 1000, ease: "linear" }}
-              className="origin-center"
-            >
+            <div className="origin-center will-change-transform" style={camera}>
+
               <p className="text-[clamp(0.6rem,1.1vw,0.8rem)] font-semibold uppercase tracking-[0.2em] text-primary">
                 Scene {Math.min(index + 1, slides.length)}
               </p>
@@ -544,7 +568,8 @@ function PlayerStage({
                   Takeaway · {slide.takeaway}
                 </motion.p>
               )}
-            </motion.div>
+            </div>
+
           </motion.section>
 
         </AnimatePresence>
