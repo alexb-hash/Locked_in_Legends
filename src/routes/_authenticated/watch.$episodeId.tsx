@@ -101,6 +101,8 @@ function WatchPage() {
 
   const [index, setIndex] = useState(0);
   const [quiz, setQuiz] = useState<Question | null>(null);
+  /** Presenter keeps moving until the pop quiz card has fully animated onto the screen. */
+  const [quizArrived, setQuizArrived] = useState(false);
   const [asked, setAsked] = useState<string[]>([]);
   const [wrong, setWrong] = useState(0);
   const [finished, setFinished] = useState(false);
@@ -359,7 +361,7 @@ function WatchPage() {
       presenter={data?.presenter ?? null}
       slides={slides}
       index={index}
-      paused={Boolean(quiz)}
+      paused={quizArrived}
       onSeek={(i) => setIndex(i)}
       onEnded={advance}
       quiz={
@@ -368,11 +370,13 @@ function WatchPage() {
             <QuizPopup
               key={quiz.id}
               question={quiz}
+              onArrived={() => setQuizArrived(true)}
               onDone={async (answer, correct, ms) => {
                 await handleAnswer(quiz, answer, correct, ms);
               }}
               onClose={() => {
                 setQuiz(null);
+                setQuizArrived(false);
                 if (index + 1 < total) setIndex((i) => i + 1);
                 else void finish();
               }}
@@ -1162,6 +1166,7 @@ function QuizPopup({
   question,
   onDone,
   onClose,
+  onArrived,
 }: {
   question: Question;
   onDone: (
@@ -1170,6 +1175,7 @@ function QuizPopup({
     ms: number,
   ) => Promise<void>;
   onClose: () => void;
+  onArrived: () => void;
 }) {
   const written = question.kind === "written";
   const options = asStrings(question.options);
@@ -1236,6 +1242,7 @@ function QuizPopup({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         transition={{ type: "spring", stiffness: 320, damping: 24 }}
+        onAnimationComplete={onArrived}
         className="w-full max-w-lg rounded-3xl border border-border/60 bg-card/90 p-6 shadow-glow-sm backdrop-blur-xl sm:p-8"
       >
         <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-primary">
