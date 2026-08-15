@@ -378,45 +378,68 @@ function PlayerStage({
 
   const active = playing && !paused && !scrubbing && slides.length > 0;
 
-
+  // Broadcast clock: the playhead only ever lands on whole 24fps frames (41.67ms),
+  // so every text reveal, caption and camera move is quantised to the same frame grid.
   useEffect(() => {
     if (!active) return;
     let raf = 0;
     let last = performance.now();
+    let carry = 0;
     const tick = (now: number) => {
-      const delta = (now - last) * rate;
+      carry += (now - last) * rate;
       last = now;
-      setElapsed((prev) => {
-        const next = prev + delta;
-        if (next >= duration) {
-          onEnded();
-          return duration;
-        }
-        return next;
-      });
+      const steps = Math.floor(carry / FRAME_MS);
+      if (steps > 0) {
+        carry -= steps * FRAME_MS;
+        setElapsed((prev) => {
+          const next = prev + steps * FRAME_MS;
+          if (next >= duration) {
+            onEnded();
+            return duration;
+          }
+          return next;
+        });
+      }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [active, duration, onEnded, rate]);
 
+  /** Whole-frame playhead — the single source of truth for every synced overlay. */
+  const frame = Math.floor(elapsed / FRAME_MS);
+  const frameTime = frame * FRAME_MS;
+  const globalFrame = Math.floor((before + elapsed) / FRAME_MS);
+  const progress = duration ? Math.min(1, frameTime / duration) : 0;
+
+  /** Camera move, evaluated per frame so it stays locked to the playhead (even when scrubbing). */
+  const camera = useMemo(() => {
+    const t = progress;
+    const sway = Math.sin(globalFrame / (FPS * 2.6));
+    const bob = Math.cos(globalFrame / (FPS * 3.4));
+    return {
+      transform: `scale(${(1 + 0.055 * t).toFixed(4)}) translate3d(${(sway * 0.5).toFixed(3)}%, ${(-1.1 * t + bob * 0.35).toFixed(3)}%, 0)`,
+    };
+  }, [globalFrame, progress]);
+
   // Reveal bullets in time with the voice-over pacing.
   const revealed = useMemo(() => {
     if (bullets.length === 0) return 0;
     const start = duration * 0.18;
     const per = (duration * 0.62) / bullets.length;
-    return Math.min(bullets.length, Math.floor(Math.max(0, elapsed - start) / per) + 1);
-  }, [bullets.length, duration, elapsed]);
+    return Math.min(bullets.length, Math.floor(Math.max(0, frameTime - start) / per) + 1);
+  }, [bullets.length, duration, frameTime]);
 
-  const showTakeaway = elapsed > duration * 0.72;
+  const showTakeaway = frameTime > duration * 0.72;
 
   /** Subtitle line that follows the playhead. */
   const caption = useMemo(() => {
     if (!slide) return "";
-    if (elapsed < duration * 0.18) return slide.title;
+    if (frameTime < duration * 0.18) return slide.title;
     if (showTakeaway && slide.takeaway) return slide.takeaway;
     return bullets[Math.max(0, revealed - 1)] ?? slide.title;
-  }, [bullets, duration, elapsed, revealed, showTakeaway, slide]);
+  }, [bullets, duration, frameTime, revealed, showTakeaway, slide]);
+
 
 
   const nudgeUi = useCallback(() => {
