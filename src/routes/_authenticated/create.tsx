@@ -50,6 +50,8 @@ export const Route = createFileRoute("/_authenticated/create")({
 });
 
 type CastRow = { key: string; name: string; role: string; files: File[]; savedId?: string };
+type SavedChar = { id: string; name: string; role: string; image: string | null };
+
 
 const STAGES = [
   "Writing the shooting script",
@@ -86,6 +88,9 @@ function CreatePage() {
   const [youtube, setYoutube] = useState("");
   const [materials, setMaterials] = useState<File[]>([]);
   const [cast, setCast] = useState<CastRow[]>([{ key: crypto.randomUUID(), name: "", role: "", files: [] }]);
+  const [savedChars, setSavedChars] = useState<SavedChar[]>([]);
+  const [pickedIds, setPickedIds] = useState<string[]>([]);
+  const [loadingCast, setLoadingCast] = useState(true);
 
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -95,6 +100,32 @@ function CreatePage() {
   const [doneCount, setDoneCount] = useState(0);
   const [seriesId, setSeriesId] = useState<string | null>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    void (async () => {
+      const { data } = await supabase
+        .from("characters")
+        .select("id, name, role_description, image_urls")
+        .eq("owner_id", user.id)
+        .order("created_at", { ascending: false });
+      if (!alive) return;
+      setSavedChars(
+        (data ?? []).map((c) => ({
+          id: c.id,
+          name: c.name,
+          role: c.role_description ?? "",
+          image: (c.image_urls as string[] | null)?.[0] ?? null,
+        })),
+      );
+      setLoadingCast(false);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [user]);
+
 
   useEffect(() => {
     if (!running) return;
@@ -128,7 +159,11 @@ function CreatePage() {
     setProgress(6);
     try {
       const named = cast.filter((c) => c.name.trim());
-      const savedCast: { id?: string; name: string; role?: string }[] = [];
+      const savedCast: { id?: string; name: string; role?: string }[] = pickedIds
+        .map((id) => savedChars.find((c) => c.id === id))
+        .filter((c): c is SavedChar => Boolean(c))
+        .map((c) => ({ id: c.id, name: c.name, role: c.role }));
+
       for (const row of named) {
         const uploaded = await uploadCastPhotos(user.id, row.files);
         const { data } = await supabase
@@ -363,6 +398,68 @@ function CreatePage() {
                     Name each character and add reference photos so they look consistent across the series.
                   </p>
 
+                  {!loadingCast && savedChars.length > 0 && (
+                    <div className="mt-5 rounded-2xl border border-border/60 bg-background/40 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold">Your saved cast</p>
+                        <Button asChild variant="ghost" size="sm" className="press rounded-xl text-xs">
+                          <Link to="/cast">Manage</Link>
+                        </Button>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Tap to load characters you already made into this series.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {savedChars.map((c) => {
+                          const on = pickedIds.includes(c.id);
+                          return (
+                            <button
+                              key={c.id}
+                              type="button"
+                              aria-pressed={on}
+                              onClick={() =>
+                                setPickedIds((prev) => (on ? prev.filter((x) => x !== c.id) : [...prev, c.id]))
+                              }
+                              className={cn(
+                                "press flex items-center gap-2 rounded-2xl border px-2.5 py-2 text-left transition-colors",
+                                on
+                                  ? "border-primary/60 bg-primary/15"
+                                  : "border-border/60 bg-background/50 hover:border-primary/40",
+                              )}
+                            >
+                              {c.image ? (
+                                <img
+                                  src={c.image}
+                                  alt={c.name}
+                                  className="size-8 rounded-xl object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <span className="grid size-8 place-items-center rounded-xl bg-primary/20 text-[11px] font-bold text-primary">
+                                  {c.name.slice(0, 1).toUpperCase()}
+                                </span>
+                              )}
+                              <span className="min-w-0">
+                                <span className="block truncate text-xs font-semibold">{c.name}</span>
+                                {c.role && (
+                                  <span className="block max-w-[9rem] truncate text-[11px] text-muted-foreground">
+                                    {c.role}
+                                  </span>
+                                )}
+                              </span>
+                              {on && <Check className="size-3.5 text-primary" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Add new characters
+                  </p>
+
+
                   <div className="mt-5 space-y-3">
                     {cast.map((row) => (
                       <div key={row.key} className="rounded-2xl border border-border/60 bg-background/40 p-4">
@@ -453,7 +550,11 @@ function CreatePage() {
                     <div className="flex justify-between gap-4">
                       <dt className="text-muted-foreground">Cast</dt>
                       <dd className="text-right font-medium">
-                        {cast.filter((c) => c.name.trim()).map((c) => c.name.trim()).join(", ") || "narrator only"}
+                        {[
+                          ...pickedIds.map((id) => savedChars.find((c) => c.id === id)?.name).filter(Boolean),
+                          ...cast.filter((c) => c.name.trim()).map((c) => c.name.trim()),
+                        ].join(", ") || "narrator only"}
+
                       </dd>
                     </div>
                   </dl>
