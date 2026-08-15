@@ -11,13 +11,16 @@ type RevealProps = {
   once?: boolean;
 } & Omit<HTMLMotionProps<"div">, "children">;
 
-/** Dreamy blur-in reveal used for page and section entrances. */
-export function Reveal({ children, delay = 0, className, y = 18, once = true, ...rest }: RevealProps) {
+/**
+ * Dreamy blur-in reveal used for page and section entrances.
+ * Animates on mount (not on scroll) so freshly mounted routes always paint,
+ * even when the intersection observer never fires during a route transition.
+ */
+export function Reveal({ children, delay = 0, className, y = 18, once: _once, ...rest }: RevealProps) {
   return (
     <motion.div
       initial={{ opacity: 0, filter: "blur(14px)", y }}
-      whileInView={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-      viewport={{ once, margin: "-60px" }}
+      animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
       transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
       className={cn(className)}
       {...rest}
@@ -42,8 +45,7 @@ export function RevealGroup({
   return (
     <motion.div
       initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: "-60px" }}
+      animate="show"
       variants={{
         hidden: {},
         show: { transition: { staggerChildren: stagger, delayChildren: delay } },

@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadCastPhotos, uploadMaterial } from "@/lib/cast";
+import { generateSeriesCover } from "@/lib/covers.functions";
 import { buildEpisode, startGeneration } from "@/lib/generate.functions";
 import { cn } from "@/lib/utils";
 
@@ -76,6 +77,7 @@ function CreatePage() {
   const navigate = useNavigate();
   const start = useServerFn(startGeneration);
   const build = useServerFn(buildEpisode);
+  const makeCover = useServerFn(generateSeriesCover);
 
   const [step, setStep] = useState(0);
   const [topic, setTopic] = useState("");
@@ -175,6 +177,9 @@ function CreatePage() {
       setTitles(plan.episodeTitles);
       setSeriesId(plan.seriesId);
       setProgress(18);
+
+      setStage("Painting the cover art");
+      void makeCover({ data: { seriesId: plan.seriesId, title: plan.title, topic: topic.trim() } }).catch(() => {});
 
       for (let i = 0; i < plan.episodeTitles.length; i += 1) {
         const res = await build({ data: { jobId: plan.jobId, index: i, topic: topic.trim(), cast: savedCast } });

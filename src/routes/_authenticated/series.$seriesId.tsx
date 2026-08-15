@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, CheckCircle2, Clock, Play, Sparkles } from "lucide-react";
 
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
+import { DeleteSeriesButton } from "@/components/series/DeleteSeriesButton";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/_authenticated/series/$seriesId")({
 function SeriesPage() {
   const { seriesId } = Route.useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const { data } = useQuery({
     queryKey: ["series", seriesId],
@@ -32,7 +34,7 @@ function SeriesPage() {
       const [{ data: series }, { data: episodes }] = await Promise.all([
         supabase
           .from("series")
-          .select("id, title, description, subject, cover_gradient, episode_count")
+          .select("id, title, description, subject, cover_gradient, cover_url, owner_id, episode_count")
           .eq("id", seriesId)
           .maybeSingle(),
         supabase
@@ -64,23 +66,47 @@ function SeriesPage() {
   return (
     <div className="mx-auto w-full max-w-4xl px-5 py-10 sm:px-8 lg:py-14">
       <Reveal>
-        <Button asChild variant="ghost" size="sm" className="press -ml-2 rounded-xl text-muted-foreground">
-          <Link to="/episodes">
-            <ArrowLeft className="mr-1 size-4" /> All series
-          </Link>
-        </Button>
+        <div className="flex items-center justify-between gap-2">
+          <Button asChild variant="ghost" size="sm" className="press -ml-2 rounded-xl text-muted-foreground">
+            <Link to="/episodes">
+              <ArrowLeft className="mr-1 size-4" /> All series
+            </Link>
+          </Button>
+          {series && series.owner_id === user?.id && (
+            <DeleteSeriesButton
+              seriesId={series.id}
+              title={series.title}
+              variant="button"
+              onDeleted={() => navigate({ to: "/episodes" })}
+            />
+          )}
+        </div>
 
         <div
           className={cn(
-            "mt-4 rounded-3xl border border-border/60 bg-gradient-to-br p-7",
+            "relative mt-4 overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br p-7",
             series?.cover_gradient ?? "from-primary/40 to-accent/20",
           )}
         >
-          <span className="rounded-full bg-background/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
-            {series?.subject ?? "Studly"}
-          </span>
-          <h1 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl">{series?.title ?? "Series"}</h1>
-          <p className="mt-2 max-w-lg text-sm text-foreground/80">{series?.description}</p>
+          {series?.cover_url && (
+            <>
+              <img
+                src={series.cover_url}
+                alt={`Cover art for ${series.title}`}
+                className="absolute inset-0 size-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/60 to-background/25" />
+            </>
+          )}
+          <div className="relative">
+            <span className="rounded-full bg-background/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-foreground/80 backdrop-blur-md">
+              {series?.subject ?? "Studly"}
+            </span>
+            <h1 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+              {series?.title ?? "Series"}
+            </h1>
+            <p className="mt-2 max-w-lg text-sm text-foreground/80">{series?.description}</p>
+          </div>
         </div>
       </Reveal>
 

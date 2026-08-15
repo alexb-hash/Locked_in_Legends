@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PlayCircle, Sparkles } from "lucide-react";
 
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
+import { DeleteSeriesButton } from "@/components/series/DeleteSeriesButton";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +33,8 @@ type SeriesRow = {
   subject: string | null;
   topic: string | null;
   cover_gradient: string | null;
+  cover_url: string | null;
+  owner_id: string;
   episode_count: number;
 };
 
@@ -43,7 +46,7 @@ function EpisodesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("series")
-        .select("id, title, description, subject, topic, cover_gradient, episode_count")
+        .select("id, title, description, subject, topic, cover_gradient, cover_url, owner_id, episode_count")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return (data ?? []) as SeriesRow[];
@@ -87,7 +90,12 @@ function EpisodesPage() {
           const done = doneBySeries.get(s.id) ?? 0;
           const pct = s.episode_count ? Math.round((done / s.episode_count) * 100) : 0;
           return (
-            <RevealItem key={s.id}>
+            <RevealItem key={s.id} className="relative">
+              {s.owner_id === user?.id && (
+                <div className="absolute right-3 top-3 z-10">
+                  <DeleteSeriesButton seriesId={s.id} title={s.title} />
+                </div>
+              )}
               <Link
                 to="/series/$seriesId"
                 params={{ seriesId: s.id }}
@@ -95,14 +103,23 @@ function EpisodesPage() {
               >
                 <div
                   className={cn(
-                    "relative flex h-36 items-end bg-gradient-to-br p-4",
+                    "relative flex h-36 items-end overflow-hidden bg-gradient-to-br p-4",
                     s.cover_gradient ?? "from-primary/40 to-accent/20",
                   )}
                 >
-                  <span className="absolute right-4 top-4 rounded-full bg-background/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
+                  {s.cover_url && (
+                    <img
+                      src={s.cover_url}
+                      alt={`Cover art for ${s.title}`}
+                      loading="lazy"
+                      className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/10 to-transparent" />
+                  <span className="absolute left-4 top-4 rounded-full bg-background/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-foreground/80 backdrop-blur-md">
                     {s.subject ?? "Studly"}
                   </span>
-                  <PlayCircle className="size-9 text-foreground/85 transition-transform duration-300 group-hover:scale-110" />
+                  <PlayCircle className="relative size-9 text-foreground/85 transition-transform duration-300 group-hover:scale-110" />
                 </div>
                 <div className="space-y-3 p-5">
                   <h2 className="font-display text-lg font-semibold leading-snug">{s.title}</h2>
