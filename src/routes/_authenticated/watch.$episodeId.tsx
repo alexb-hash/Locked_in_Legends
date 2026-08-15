@@ -51,7 +51,15 @@ export const Route = createFileRoute("/_authenticated/watch/$episodeId")({
   component: WatchPage,
 });
 
-type Slide = { id: string; order_index: number; title: string; bullets: unknown; takeaway: string | null };
+type Slide = {
+  id: string;
+  order_index: number;
+  title: string;
+  bullets: unknown;
+  takeaway: string | null;
+  art_url?: string | null;
+};
+
 type Question = {
   id: string;
   order_index: number;
