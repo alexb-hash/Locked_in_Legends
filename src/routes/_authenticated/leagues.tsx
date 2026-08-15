@@ -43,7 +43,7 @@ function LeaguesPage() {
   const [showRules, setShowRules] = useState(false);
 
   const { data } = useQuery({
-    queryKey: ["leagues-board", profile?.league_id],
+    queryKey: ["leagues-board", profile?.league_id, user?.id],
     queryFn: async () => {
       const [{ data: leagues }, { data: season }] = await Promise.all([
         supabase.from("leagues").select("id, name, tier, slug").order("tier", { ascending: true }),
