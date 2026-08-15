@@ -21,7 +21,11 @@ import {
 import castIris from "@/assets/cast/cast-iris.webp.asset.json";
 import castLex from "@/assets/cast/cast-lex.webp.asset.json";
 import castMo from "@/assets/cast/cast-mo.jpeg.asset.json";
+import presenterClosed from "@/assets/presenter-demo-closed.jpg";
+import presenterMid from "@/assets/presenter-demo-mid.jpg";
+import presenterOpen from "@/assets/presenter-demo-open.jpg";
 import sceneBackdrop from "@/assets/scene-demo-backdrop.jpg";
+import { mouthForWord, splitWords } from "@/lib/viseme";
 import { Ambience } from "@/components/motion/Ambience";
 import {
   Floaty,
