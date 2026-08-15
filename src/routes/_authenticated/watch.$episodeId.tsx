@@ -467,6 +467,36 @@ function PlayerStage({
     return bullets[Math.max(0, revealed - 1)] ?? slide.title;
   }, [bullets, duration, frameTime, revealed, showTakeaway, slide]);
 
+  /**
+   * The presenter speaks the script line the playhead is on. Speech drives the mouth cycle;
+   * with voice muted the mouth still articulates while the line is on screen.
+   */
+  useEffect(() => {
+    const synth = typeof window === "undefined" ? null : window.speechSynthesis;
+    if (!active || !caption) {
+      synth?.cancel();
+      setSpeaking(false);
+      return;
+    }
+    if (!voiceOn || !synth) {
+      setSpeaking(true);
+      return;
+    }
+    synth.cancel();
+    const utter = new SpeechSynthesisUtterance(caption);
+    utter.rate = Math.min(2, 0.98 * rate);
+    utter.pitch = 1.02;
+    utter.onstart = () => setSpeaking(true);
+    utter.onend = () => setSpeaking(false);
+    utter.onerror = () => setSpeaking(false);
+    synth.speak(utter);
+    return () => {
+      synth.cancel();
+      setSpeaking(false);
+    };
+  }, [active, caption, rate, voiceOn]);
+
+  useEffect(() => () => window.speechSynthesis?.cancel(), []);
 
 
   const nudgeUi = useCallback(() => {
