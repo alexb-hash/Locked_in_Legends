@@ -495,3 +495,24 @@
     mask-image: radial-gradient(ellipse at 50% 40%, black, transparent 78%);
   }
 }
+
+/* ---- No-JS / pre-hydration entrance ---------------------------------
+   Server-rendered markup must paint immediately instead of waiting for the
+   motion runtime to hydrate. These CSS-only reveals run at first paint. */
+
+@keyframes css-reveal-in {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@utility reveal-css {
+  animation: css-reveal-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
