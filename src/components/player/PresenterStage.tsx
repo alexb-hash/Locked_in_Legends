@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
+
+import presenterClosed from "@/assets/presenter-demo-closed.jpg";
+import presenterMid from "@/assets/presenter-demo-mid.jpg";
+import presenterOpen from "@/assets/presenter-demo-open.jpg";
 import { cn } from "@/lib/utils";
 
 const FPS = 60;
 /** Drawn animation cadence: poses swap ~12 times a second so it reads as speech, not a strobe. */
 const SWAP_EVERY = 5;
+
+const FALLBACK_TALK = [presenterClosed, presenterMid, presenterOpen, presenterMid];
 
 export type PresenterFrames = Partial<Record<"mouth_closed" | "mouth_mid" | "mouth_open" | "blink" | "gesture", string>>;
 
@@ -27,16 +33,28 @@ export function PresenterStage({
   frame: number;
   className?: string;
 }) {
+  // Any pose that fails to load (expired signed URL, missing object) is retired so the cycle
+  // falls back to the built-in illustrated anchor instead of flashing a broken frame.
+  const [broken, setBroken] = useState<Record<string, true>>({});
+
   const order = useMemo(() => {
-    const talk = [frames.mouth_closed, frames.mouth_mid, frames.mouth_open, frames.mouth_mid, frames.gesture].filter(
-      (u): u is string => Boolean(u),
-    );
-    return {
-      talk: talk.length ? talk : [frames.mouth_closed ?? ""].filter(Boolean),
-      idle: frames.mouth_closed ?? frames.mouth_mid ?? frames.gesture ?? "",
-      blink: frames.blink ?? "",
-    };
-  }, [frames]);
+    const ok = (u?: string | null) => (u && !broken[u] ? u : undefined);
+    const talk = [
+      ok(frames.mouth_closed),
+      ok(frames.mouth_mid),
+      ok(frames.mouth_open),
+      ok(frames.mouth_mid),
+      ok(frames.gesture),
+    ].filter((u): u is string => Boolean(u));
+    const idle = ok(frames.mouth_closed) ?? ok(frames.mouth_mid) ?? ok(frames.gesture);
+    // A single generated still is not an animation — only trust generated art once there are
+    // at least two distinct mouth poses, otherwise use the built-in three-pose set.
+    const distinct = new Set(talk).size;
+    if (distinct < 2) {
+      return { talk: FALLBACK_TALK, idle: FALLBACK_TALK[0]!, blink: "" };
+    }
+    return { talk, idle: idle ?? talk[0]!, blink: ok(frames.blink) ?? "" };
+  }, [broken, frames]);
 
   // Preload every pose so a swap never flashes an empty frame.
   const [ready, setReady] = useState(false);
@@ -76,7 +94,7 @@ export function PresenterStage({
     };
   }, [frame, order, speaking]);
 
-  if (!look.src) return null;
+  const src = look.src || FALLBACK_TALK[0]!;
 
   return (
     <div className={cn("relative isolate select-none", className)}>
@@ -89,9 +107,10 @@ export function PresenterStage({
         <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_0%,oklch(0.28_0.06_300/0.8),transparent_65%)]" />
 
         <img
-          key={look.src}
-          src={look.src}
+          key={src}
+          src={src}
           alt={name}
+          onError={() => setBroken((b) => (b[src] ? b : { ...b, [src]: true }))}
           className={cn(
             "absolute inset-0 h-full w-full object-cover object-top will-change-transform",
             ready ? "opacity-100" : "opacity-0",
