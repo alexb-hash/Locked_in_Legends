@@ -3,6 +3,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowLeft,
+  Captions,
+  CaptionsOff,
   Check,
   Flame,
   Maximize,
@@ -16,6 +18,7 @@ import {
   Trophy,
   X,
 } from "lucide-react";
+
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -323,7 +326,11 @@ function PlayerStage({
   const [rate, setRate] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   const [uiVisible, setUiVisible] = useState(true);
+  const [captionsOn, setCaptionsOn] = useState(true);
+  const [scrubbing, setScrubbing] = useState(false);
   const hideTimer = useRef<number | null>(null);
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const pendingElapsed = useRef<number | null>(null);
 
   const slide = slides[index];
   const durations = useMemo(() => slides.map(slideDuration), [slides]);
@@ -332,12 +339,45 @@ function PlayerStage({
   const before = durations.slice(0, index).reduce((a, b) => a + b, 0);
   const bullets = asStrings(slide?.bullets);
 
-  // Reset the playhead whenever the cut changes.
+  // Reset the playhead whenever the cut changes (unless we scrubbed into it).
   useEffect(() => {
-    setElapsed(0);
+    setElapsed(pendingElapsed.current ?? 0);
+    pendingElapsed.current = null;
   }, [index]);
 
-  const active = playing && !paused && slides.length > 0;
+  /** Seek anywhere on the runtime, like dragging a video scrubber. */
+  const seekToMs = useCallback(
+    (ms: number) => {
+      const clamped = Math.max(0, Math.min(totalMs - 1, ms));
+      let acc = 0;
+      for (let i = 0; i < durations.length; i += 1) {
+        const d = durations[i]!;
+        if (clamped < acc + d || i === durations.length - 1) {
+          const within = clamped - acc;
+          if (i === index) setElapsed(within);
+          else {
+            pendingElapsed.current = within;
+            onSeek(i);
+          }
+          return;
+        }
+        acc += d;
+      }
+    },
+    [durations, index, onSeek, totalMs],
+  );
+
+  const seekFromPointer = useCallback(
+    (clientX: number) => {
+      const rect = barRef.current?.getBoundingClientRect();
+      if (!rect || rect.width === 0) return;
+      seekToMs(((clientX - rect.left) / rect.width) * totalMs);
+    },
+    [seekToMs, totalMs],
+  );
+
+  const active = playing && !paused && !scrubbing && slides.length > 0;
+
 
   useEffect(() => {
     if (!active) return;
@@ -369,6 +409,15 @@ function PlayerStage({
   }, [bullets.length, duration, elapsed]);
 
   const showTakeaway = elapsed > duration * 0.72;
+
+  /** Subtitle line that follows the playhead. */
+  const caption = useMemo(() => {
+    if (!slide) return "";
+    if (elapsed < duration * 0.18) return slide.title;
+    if (showTakeaway && slide.takeaway) return slide.takeaway;
+    return bullets[Math.max(0, revealed - 1)] ?? slide.title;
+  }, [bullets, duration, elapsed, revealed, showTakeaway, slide]);
+
 
   const nudgeUi = useCallback(() => {
     setUiVisible(true);
@@ -410,8 +459,12 @@ function PlayerStage({
       } else if (e.key === "ArrowLeft") {
         onSeek(Math.max(0, index - 1));
         nudgeUi();
+      } else if (e.key === "c") {
+        setCaptionsOn((c) => !c);
+        nudgeUi();
       } else if (e.key === "f") {
         void toggleFullscreen();
+
       }
     };
     window.addEventListener("keydown", onKey);
@@ -496,6 +549,20 @@ function PlayerStage({
 
         </AnimatePresence>
 
+        {/* Captions */}
+        {captionsOn && caption && (
+          <div
+            className={cn(
+              "pointer-events-none absolute inset-x-0 z-20 flex justify-center px-6 transition-all duration-300",
+              uiVisible || !playing ? "bottom-24" : "bottom-10",
+            )}
+          >
+            <p className="max-w-[80%] rounded-xl bg-black/65 px-3 py-1.5 text-center text-[clamp(0.75rem,1.3vw,1rem)] font-medium leading-snug text-white backdrop-blur-sm">
+              {caption}
+            </p>
+          </div>
+        )}
+
         {/* Controls */}
         <div
           className={cn(
@@ -503,26 +570,50 @@ function PlayerStage({
             uiVisible || !playing ? "opacity-100" : "opacity-0",
           )}
         >
-          {/* Chapter timeline */}
-          <div className="flex items-end gap-1">
-            {slides.map((s, i) => (
-              <button
-                key={s.id}
-                type="button"
-                aria-label={`Scene ${i + 1}: ${s.title}`}
-                onClick={() => onSeek(i)}
-                style={{ flexGrow: durations[i] }}
-                className="group/chap relative h-4 shrink-0 basis-0 pt-2.5"
-              >
-                <span className="block h-1.5 overflow-hidden rounded-full bg-white/25 transition-all group-hover/chap:h-2">
+          {/* Scrubbable timeline with chapter markers */}
+          <div
+            ref={barRef}
+            role="slider"
+            tabIndex={0}
+            aria-label="Seek"
+            aria-valuemin={0}
+            aria-valuemax={Math.round(totalMs / 1000)}
+            aria-valuenow={Math.round((before + elapsed) / 1000)}
+            onPointerDown={(e) => {
+              e.currentTarget.setPointerCapture(e.pointerId);
+              setScrubbing(true);
+              seekFromPointer(e.clientX);
+            }}
+            onPointerMove={(e) => {
+              if (scrubbing) seekFromPointer(e.clientX);
+            }}
+            onPointerUp={() => setScrubbing(false)}
+            onPointerCancel={() => setScrubbing(false)}
+            className="group/bar relative cursor-pointer touch-none py-2"
+          >
+            <div className="relative h-1.5 rounded-full bg-white/25 transition-all group-hover/bar:h-2.5">
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-primary"
+                style={{ width: `${totalMs ? ((before + elapsed) / totalMs) * 100 : 0}%` }}
+              />
+              {/* chapter dividers */}
+              {durations.slice(0, -1).map((_, i) => {
+                const at = durations.slice(0, i + 1).reduce((a, b) => a + b, 0);
+                return (
                   <span
-                    className="block h-full rounded-full bg-primary"
-                    style={{ width: i < index ? "100%" : i === index ? `${(elapsed / duration) * 100}%` : "0%" }}
+                    key={i}
+                    className="absolute top-0 h-full w-0.5 -translate-x-1/2 bg-background/70"
+                    style={{ left: `${(at / totalMs) * 100}%` }}
                   />
-                </span>
-              </button>
-            ))}
+                );
+              })}
+              <span
+                className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow transition-opacity group-hover/bar:opacity-100"
+                style={{ left: `${totalMs ? ((before + elapsed) / totalMs) * 100 : 0}%`, opacity: scrubbing ? 1 : undefined }}
+              />
+            </div>
           </div>
+
 
           <div className="mt-2 flex items-center gap-2 text-white">
             <button
@@ -553,6 +644,19 @@ function PlayerStage({
               {formatTime(before + elapsed)} / {formatTime(totalMs)}
             </span>
             <span className="ml-auto flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCaptionsOn((c) => !c)}
+                aria-pressed={captionsOn}
+                aria-label={captionsOn ? "Turn captions off" : "Turn captions on"}
+                className={cn(
+                  "press grid size-9 place-items-center rounded-full hover:bg-white/15",
+                  captionsOn && "bg-white/20 ring-1 ring-white/40",
+                )}
+              >
+                {captionsOn ? <Captions className="size-4" /> : <CaptionsOff className="size-4" />}
+              </button>
+
               <button
                 type="button"
                 onClick={() => setRate((r) => (r === 1 ? 1.5 : r === 1.5 ? 2 : r === 2 ? 0.75 : 1))}
@@ -591,7 +695,7 @@ function PlayerStage({
 
       {!fullscreen && (
         <p className="mt-3 text-center text-xs text-muted-foreground">
-          Space to play/pause · ← → to skip scenes · F for full screen
+          Space to play/pause · ← → to skip scenes · C for captions · F for full screen
         </p>
       )}
     </div>
