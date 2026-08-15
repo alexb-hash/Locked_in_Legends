@@ -93,24 +93,13 @@ function Landing() {
         </nav>
       </header>
 
-      <section className="relative mx-auto w-full max-w-4xl px-5 pt-16 pb-10 text-center sm:px-8 sm:pt-24">
+      <section className="relative mx-auto w-full max-w-4xl px-5 pt-20 pb-10 text-center sm:px-8 sm:pt-32">
         <Reveal>
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-4 py-1.5 text-xs font-semibold text-muted-foreground backdrop-blur">
-            <Sparkles className="size-3.5 text-primary" />
-            Your AI study platform
-          </span>
-        </Reveal>
-        <Reveal delay={0.08}>
-          <h1 className="mt-6 font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
-            Study that feels like <span className="text-gradient">bingeing a show</span>
+          <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
+            Make studying <span className="text-gradient">hit different.</span>
           </h1>
         </Reveal>
-        <Reveal delay={0.16}>
-          <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground">
-            Drop in a topic, a PDF or a lecture recording. Studly turns it into episodes, pop quizzes and flashcards —
-            and Susu coaches you through every tricky bit.
-          </p>
-        </Reveal>
+        <RotatingSubtitle />
         <Reveal delay={0.24}>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Button asChild size="lg" className="press glow-ring h-12 rounded-full px-7 text-sm font-semibold">
