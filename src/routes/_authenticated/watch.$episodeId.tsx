@@ -16,6 +16,8 @@ import {
   Sparkles,
   Timer,
   Trophy,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 
