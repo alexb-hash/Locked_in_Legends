@@ -328,6 +328,7 @@ function formatTime(ms: number) {
 
 function PlayerStage({
   title,
+  presenter,
   slides,
   index,
   paused,
@@ -336,6 +337,7 @@ function PlayerStage({
   quiz,
 }: {
   title: string;
+  presenter: { name: string; src: string } | null;
   slides: Slide[];
   index: number;
   paused: boolean;
@@ -344,6 +346,8 @@ function PlayerStage({
   quiz: React.ReactNode;
 }) {
   const shellRef = useRef<HTMLDivElement | null>(null);
+  const [voiceOn, setVoiceOn] = useState(true);
+  const [speaking, setSpeaking] = useState(false);
   const [playing, setPlaying] = useState(true);
   const [elapsed, setElapsed] = useState(0);
   const [rate, setRate] = useState(1);
