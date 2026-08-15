@@ -167,7 +167,14 @@ function HeroPreview() {
           {/* two-column broadcast: presenter left, lesson right */}
           <div className="relative grid h-full grid-cols-[26%_1fr] gap-3 p-4 sm:gap-5 sm:p-6">
             {/* Same broadcast anchor component as the player, so the demo motion matches. */}
-            <PresenterStage frames={{}} name="Susu" speaking frame={tick} className="aspect-[3/4] self-end" />
+            <PresenterStage
+              frames={{ mouth_closed: presenterClosed, mouth_mid: presenterMid, mouth_open: presenterOpen }}
+              name="Susu"
+              speaking
+              mouth={demoMouth}
+              frame={tick}
+              className="aspect-[3/4] self-end"
+            />
 
             <div className="flex flex-col justify-center gap-2">
               <p className="text-[0.6rem] font-semibold uppercase tracking-widest text-primary sm:text-xs">
