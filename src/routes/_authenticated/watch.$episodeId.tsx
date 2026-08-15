@@ -538,7 +538,6 @@ function PlayerStage({
           } else {
             pendingElapsed.current = within;
             pendingStartFrac.current = d ? within / d : 0;
-            indexRef.current = i;
             onSeek(i);
           }
           return;
@@ -670,6 +669,8 @@ function PlayerStage({
 
   /** Character offset the voice has reached, so subtitles follow the words actually being read. */
   const [spokenChar, setSpokenChar] = useState(0);
+  const spokenCharRef = useRef(0);
+  spokenCharRef.current = spokenChar;
   /** True once the full scene script has been read out — the cut cannot end before this. */
   const [narrationDone, setNarrationDone] = useState(false);
   narrating.current = Boolean(script) && !narrationDone;
@@ -800,7 +801,7 @@ function PlayerStage({
       setSpeaking(false);
       // Some browsers drop long utterances after a quiz. Continue from this word on our stable
       // word clock instead of treating the interruption as the end of the lesson.
-      setNarrationStart((current) => Math.max(current, spokenChar));
+      setNarrationStart((current) => Math.max(current, spokenCharRef.current));
       setSpeechFailed(true);
     };
     synth.speak(utter);
