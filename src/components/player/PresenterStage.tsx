@@ -128,6 +128,17 @@ export function PresenterStage({
                 draggable={false}
               />
             ) : null}
+            {blinkLayer ? (
+              <img
+                src={blinkLayer}
+                alt=""
+                aria-hidden
+                onError={() => setBroken((current) => ({ ...current, [blinkLayer]: true }))}
+                className="absolute inset-0 h-full w-full object-cover object-top"
+                style={{ opacity: blinkOpacity }}
+                draggable={false}
+              />
+            ) : null}
           </div>
         ) : (
           <div className="absolute inset-0 grid place-items-center px-4 text-center">
