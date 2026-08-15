@@ -86,8 +86,8 @@ export function masterPrompt(name: string, role: string | null | undefined, hasR
     `Character design for an animated educational broadcast: ${name}, a warm, charismatic on-camera teacher.`,
     role ? `Role: ${role}.` : "",
     hasReference
-      ? "Use the attached photo only as a likeness reference for face structure, hair and skin tone — do not copy or collage the photo, draw an original illustrated character inspired by it."
-      : "Invent an appealing original character design.",
+      ? "Use the attached photo only as a likeness reference for face structure, hair and skin tone — do not copy or collage the photo, draw an original illustrated character inspired by it. Match the apparent age in the photo exactly: if they look young, keep them young. Smooth youthful skin, no wrinkles, no eye bags, no grey hair, no beard or stubble unless clearly present in the photo, no aging or maturing of the face."
+      : "Invent an appealing original character design of a young adult teacher.",
     "Waist-up centred framing, facing the camera, tidy modern outfit, neutral closed-mouth expression, eyes open.",
     "Portrait 3:4 composition with generous headroom.",
     STYLE,
