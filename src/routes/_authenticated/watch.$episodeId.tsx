@@ -471,7 +471,12 @@ function PlayerStage({
     setElapsed(start);
   }, [index]);
 
-  /** Seek anywhere on the runtime, like dragging a video scrubber. */
+  /**
+   * Seek anywhere on the runtime, like dragging a video scrubber. Scrubbing also rewinds the
+   * narration: the voice restarts from the word that sits at the new playhead, so audio, captions
+   * and lip-sync all land on the moment the viewer scrubbed to instead of continuing where the
+   * previous take left off.
+   */
   const seekToMs = useCallback(
     (ms: number) => {
       if (totalMs <= 0 || durations.length === 0) return;
@@ -485,8 +490,13 @@ function PlayerStage({
             elapsedRef.current = within;
             endedRef.current = false;
             setElapsed(within);
+            const at = wordStartAt(scriptRef.current, d ? within / d : 0);
+            setNarrationStart(at);
+            setSpokenChar(at);
+            setNarrationDone(false);
           } else {
             pendingElapsed.current = within;
+            pendingStartFrac.current = d ? within / d : 0;
             onSeek(i);
           }
           return;
@@ -496,6 +506,7 @@ function PlayerStage({
     },
     [durations, index, onSeek, totalMs],
   );
+
 
   const seekFromPointer = useCallback(
     (clientX: number) => {
