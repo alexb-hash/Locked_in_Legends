@@ -403,11 +403,17 @@ function PlayerStage({
   elapsedRef.current = elapsed;
   /** One scene can only ever end once, no matter how many signals arrive on the same frame. */
   const endedRef = useRef(false);
+  /**
+   * The parent hands a fresh callback every render, so it is mirrored in a ref: the 60fps clock
+   * effect must stay mounted for the whole scene instead of restarting (and losing time) each frame.
+   */
+  const onEndedRef = useRef(onEnded);
+  onEndedRef.current = onEnded;
   const endScene = useCallback(() => {
     if (endedRef.current) return;
     endedRef.current = true;
-    onEnded();
-  }, [onEnded]);
+    onEndedRef.current();
+  }, []);
 
   // Reset the playhead whenever the cut changes (unless we scrubbed into it).
   useEffect(() => {
