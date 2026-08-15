@@ -896,7 +896,6 @@ export type Database = {
           total_xp: number
         }[]
       }
-      default_league_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
