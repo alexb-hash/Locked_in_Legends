@@ -1078,7 +1078,7 @@ function PlayerStage({
             tabIndex={0}
             aria-label="Seek"
             aria-valuemin={0}
-            aria-valuemax={Math.round(totalMs / 1000)}
+            aria-valuemax={Math.round(displayedTotalMs / 1000)}
             aria-valuenow={Math.round((before + elapsed) / 1000)}
             onPointerDown={startScrub}
             className="group/bar relative cursor-pointer touch-none py-2"
@@ -1086,7 +1086,9 @@ function PlayerStage({
             <div className="relative h-1.5 rounded-full bg-white/25 transition-all group-hover/bar:h-2.5">
               <div
                 className="absolute inset-y-0 left-0 rounded-full bg-primary"
-                style={{ width: `${totalMs ? ((before + elapsed) / totalMs) * 100 : 0}%` }}
+                style={{
+                  width: `${displayedTotalMs ? Math.min(100, ((before + elapsed) / displayedTotalMs) * 100) : 0}%`,
+                }}
               />
               {/* chapter dividers */}
               {durations.slice(0, -1).map((_, i) => {
@@ -1102,7 +1104,7 @@ function PlayerStage({
               <span
                 className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow transition-opacity group-hover/bar:opacity-100"
                 style={{
-                  left: `${totalMs ? ((before + elapsed) / totalMs) * 100 : 0}%`,
+                  left: `${displayedTotalMs ? Math.min(100, ((before + elapsed) / displayedTotalMs) * 100) : 0}%`,
                   opacity: scrubbing ? 1 : undefined,
                 }}
               />
@@ -1135,7 +1137,7 @@ function PlayerStage({
               <SkipForward className="size-4" />
             </button>
             <span className="ml-1 text-xs tabular-nums text-white/80">
-              {formatTime(before + elapsed)} / {formatTime(totalMs)}
+              {formatTime(before + elapsed)} / {formatTime(displayedTotalMs)}
             </span>
             <span className="ml-auto flex items-center gap-2">
               <button
