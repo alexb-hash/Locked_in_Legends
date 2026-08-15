@@ -745,6 +745,20 @@ function PlayerStage({
               >
                 {captionsOn ? <Captions className="size-4" /> : <CaptionsOff className="size-4" />}
               </button>
+              <button
+                type="button"
+                onClick={() => setVoiceOn((v) => !v)}
+                aria-pressed={voiceOn}
+                aria-label={voiceOn ? "Mute the presenter" : "Unmute the presenter"}
+                className={cn(
+                  "press grid size-9 place-items-center rounded-full hover:bg-white/15",
+                  voiceOn && "bg-white/20 ring-1 ring-white/40",
+                )}
+              >
+                {voiceOn ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+              </button>
+
+
 
               <button
                 type="button"
