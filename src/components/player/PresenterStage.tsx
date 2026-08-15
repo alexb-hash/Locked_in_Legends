@@ -28,12 +28,17 @@ export function PresenterStage({
   className?: string;
 }) {
   const [broken, setBroken] = useState<Record<string, true>>({});
+  const ok = (url: string | undefined) => (url && !broken[url] ? url : undefined);
   const portrait = useMemo(
     () =>
       [frames.mouth_closed, frames.mouth_mid, frames.mouth_open, frames.gesture]
         .find((url): url is string => Boolean(url && !broken[url])),
     [broken, frames.gesture, frames.mouth_closed, frames.mouth_mid, frames.mouth_open],
   );
+  // Speech layers: mid then open, blended on top of the neutral portrait with continuous opacity so
+  // the mouth reads as moving without any hard frame swap.
+  const midLayer = ok(frames.mouth_mid) !== portrait ? ok(frames.mouth_mid) : undefined;
+  const openLayer = ok(frames.mouth_open) !== portrait ? ok(frames.mouth_open) : undefined;
 
   const t = frame / FPS;
   const breath = Math.sin(t * 1.05);
@@ -43,6 +48,16 @@ export function PresenterStage({
   const portraitStyle: React.CSSProperties = {
     transform: `translate3d(${(drift * 0.22).toFixed(3)}%, ${(breath * -0.16 * activity).toFixed(3)}%, 0) rotate(${(settle * 0.12).toFixed(3)}deg) scale(${(1.035 + breath * 0.0018 * activity).toFixed(4)})`,
   };
+
+  // Smooth syllable envelope (~3.2 syllables/s) modulated by a slow phrase contour, so pauses and
+  // emphasis feel natural instead of a metronome. Always continuous — never a step function.
+  const syllable = (Math.sin(t * 20.1) + 1) / 2;
+  const phrase = (Math.sin(t * 1.13 + 0.4) + Math.sin(t * 0.47 + 2.2)) / 2;
+  const gate = Math.max(0, Math.min(1, 0.62 + phrase * 0.55));
+  const env = speaking ? Math.pow(syllable, 1.6) * gate : 0;
+  const mouthOpacity = (level: number) =>
+    Math.max(0, Math.min(1, (env - level) / 0.42)).toFixed(3);
+
 
   return (
     <div className={cn("relative z-30 isolate select-none", className)}>
