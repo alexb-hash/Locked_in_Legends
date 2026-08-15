@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Flame, Layers, PlayCircle, Sparkles, Target, Trophy } from "lucide-react";
+import { Clapperboard, Flame, Layers, PlayCircle, Sparkles, Target, Trophy } from "lucide-react";
 
 import { Floaty, Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { Button } from "@/components/ui/button";
