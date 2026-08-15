@@ -629,15 +629,14 @@ function PlayerStage({
             className="absolute inset-0 flex items-center gap-[4%] px-[5%] pb-[12%] pt-[5%]"
           >
             {/* Broadcast anchor: its own column, so it never sits on top of the lesson. */}
-            {presenter && (
-              <PresenterStage
-                frames={presenter.frames}
-                name={presenter.name}
-                speaking={speaking && active}
-                frame={globalFrame}
-                className="hidden aspect-[3/4] h-full max-h-[78%] shrink-0 sm:block sm:w-[26%]"
-              />
-            )}
+            <PresenterStage
+              frames={presenter?.frames ?? {}}
+              name={presenter?.name ?? "Susu"}
+              speaking={speaking && active}
+              frame={globalFrame}
+              className="aspect-[3/4] h-full max-h-[54%] w-[22%] shrink-0 self-end sm:max-h-[78%] sm:w-[26%] sm:self-center"
+            />
+
 
             <div className="min-w-0 flex-1 origin-left will-change-transform" style={camera}>
 
