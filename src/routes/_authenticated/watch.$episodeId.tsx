@@ -464,6 +464,10 @@ function PlayerStage({
   const [narrationStart, setNarrationStart] = useState(0);
   /** True while the scene's script is still being read — the cut is held open until it finishes. */
   const narrating = useRef(true);
+  /** Invalidates callbacks from a cancelled browser utterance before they can affect a new take. */
+  const speechRun = useRef(0);
+  /** Falls back to the deterministic word clock if the browser voice drops unexpectedly. */
+  const [speechFailed, setSpeechFailed] = useState(false);
 
 
   const slide = slides[index];
@@ -476,6 +480,9 @@ function PlayerStage({
   /** Live playhead mirror, so the clock never reads stale state inside a frame callback. */
   const elapsedRef = useRef(0);
   elapsedRef.current = elapsed;
+  /** Synchronous scene mirror: pointermove can fire again before React commits the previous seek. */
+  const indexRef = useRef(index);
+  indexRef.current = index;
   /** One scene can only ever end once, no matter how many signals arrive on the same frame. */
   const endedRef = useRef(false);
   /**
@@ -508,13 +515,19 @@ function PlayerStage({
   const seekToMs = useCallback(
     (ms: number) => {
       if (totalMs <= 0 || durations.length === 0) return;
+      // Seeking is authoritative: silence and invalidate the old take before moving any visual state.
+      speechRun.current += 1;
+      if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+      spokenWord.current = null;
+      setSpeaking(false);
+      setSpeechFailed(false);
       const clamped = Math.max(0, Math.min(totalMs - 1, ms));
       let acc = 0;
       for (let i = 0; i < durations.length; i += 1) {
         const d = durations[i]!;
         if (clamped < acc + d || i === durations.length - 1) {
           const within = Math.max(0, clamped - acc);
-          if (i === index) {
+          if (i === indexRef.current) {
             elapsedRef.current = within;
             endedRef.current = false;
             setElapsed(within);
@@ -525,6 +538,7 @@ function PlayerStage({
           } else {
             pendingElapsed.current = within;
             pendingStartFrac.current = d ? within / d : 0;
+            indexRef.current = i;
             onSeek(i);
           }
           return;
@@ -532,7 +546,7 @@ function PlayerStage({
         acc += d;
       }
     },
-    [durations, index, onSeek, totalMs],
+    [durations, onSeek, totalMs],
   );
 
 
@@ -634,7 +648,10 @@ function PlayerStage({
    */
   const scriptLines = useMemo(() => {
     if (!slide) return [] as { text: string; start: number; end: number }[];
-    const parts = [slide.title, ...bullets, slide.takeaway ?? ""]
+    const introduction = index === 0 && presenter?.name
+      ? `I'm ${presenter.name}`
+      : "";
+    const parts = [introduction, slide.title, ...bullets, slide.takeaway ?? ""]
       .map((p) => p?.trim())
       .filter(Boolean) as string[];
     const out: { text: string; start: number; end: number }[] = [];
@@ -644,7 +661,7 @@ function PlayerStage({
       cursor += part.length + 2; // joined with ". "
     }
     return out;
-  }, [bullets, slide]);
+  }, [bullets, index, presenter?.name, slide]);
   const script = useMemo(() => scriptLines.map((l) => l.text).join(". "), [scriptLines]);
   /** Read by the seek handler, which runs outside render. */
   const scriptRef = useRef(script);
@@ -670,6 +687,7 @@ function PlayerStage({
   useEffect(() => {
     const at = pendingStartFrac.current !== null ? wordStartAt(script, pendingStartFrac.current) : 0;
     pendingStartFrac.current = null;
+    setSpeechFailed(false);
     setNarrationStart(at);
     setSpokenChar(at);
     setNarrationDone(false);
@@ -686,17 +704,18 @@ function PlayerStage({
   // Safety net: if the voice engine never reports back (no voices, blocked autoplay, a dropped
   // utterance), the scene must still finish instead of hanging on the last frame forever.
   useEffect(() => {
-    if (!script || narrationDone || !armed) return;
+    if (!script || narrationDone || !armed || !active) return;
     const budget = splitWords(script.slice(narrationStart)).reduce(
       (sum, w) => sum + estimateWordMs(w.text, Math.min(2, 0.98 * rate)) + 40,
       0,
     );
     const timer = window.setTimeout(() => setNarrationDone(true), budget + 8000);
     return () => window.clearTimeout(timer);
-  }, [armed, narrationDone, narrationStart, rate, script]);
+  }, [active, armed, narrationDone, narrationStart, rate, script]);
 
   useEffect(() => {
     const synth = typeof window === "undefined" ? null : window.speechSynthesis;
+    const run = ++speechRun.current;
     const speechRate = Math.min(2, 0.98 * rate);
     spokenWord.current = null;
     // The take starts at the scrubbed word, so rewinding the timeline rewinds the voice with it.
@@ -712,7 +731,7 @@ function PlayerStage({
 
 
     // Muted: walk the whole script's words on an estimated clock so the mouth still matches text.
-    if (!voiceOn || !synth) {
+    if (!voiceOn || !synth || speechFailed) {
       synth?.cancel();
       setSpeaking(true);
       const words = splitWords(take).map((w) => ({ ...w, index: w.index + offset }));
@@ -721,7 +740,7 @@ function PlayerStage({
       let timer = 0;
       let cancelled = false;
       const step = () => {
-        if (cancelled) return;
+        if (cancelled || speechRun.current !== run) return;
         // Hold the walker in place while playback is paused, quizzing or scrubbing.
         if (!activeRef.current) {
           timer = window.setTimeout(step, 120);
@@ -753,8 +772,11 @@ function PlayerStage({
     const utter = new SpeechSynthesisUtterance(take);
     utter.rate = speechRate;
     utter.pitch = 1.02;
-    utter.onstart = () => setSpeaking(true);
+    utter.onstart = () => {
+      if (speechRun.current === run) setSpeaking(true);
+    };
     utter.onboundary = (event) => {
+      if (speechRun.current !== run) return;
       if (event.name && event.name !== "word") return;
       const rest = take.slice(event.charIndex);
       const text = (event.charLength ? rest.slice(0, event.charLength) : rest.split(/\s/)[0]) ?? "";
@@ -767,24 +789,30 @@ function PlayerStage({
       setSpokenChar(event.charIndex + offset);
     };
     utter.onend = () => {
+      if (speechRun.current !== run) return;
       spokenWord.current = null;
       setSpeaking(false);
       setNarrationDone(true);
     };
     utter.onerror = () => {
+      if (speechRun.current !== run) return;
       spokenWord.current = null;
       setSpeaking(false);
-      setNarrationDone(true);
+      // Some browsers drop long utterances after a quiz. Continue from this word on our stable
+      // word clock instead of treating the interruption as the end of the lesson.
+      setNarrationStart((current) => Math.max(current, spokenChar));
+      setSpeechFailed(true);
     };
     synth.speak(utter);
     // A pause left over from the scrub (or a paused engine) would swallow the new take.
     if (synth.paused) synth.resume();
     return () => {
+      if (speechRun.current === run) speechRun.current += 1;
       synth.cancel();
       spokenWord.current = null;
       setSpeaking(false);
     };
-  }, [active, armed, script, narrationStart, rate, scrubbing, voiceOn]);
+  }, [active, armed, script, narrationStart, rate, scrubbing, speechFailed, voiceOn]);
 
 
 
