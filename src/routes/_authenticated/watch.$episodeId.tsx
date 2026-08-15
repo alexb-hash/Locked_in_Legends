@@ -377,6 +377,8 @@ function PlayerStage({
   const hideTimer = useRef<number | null>(null);
   const barRef = useRef<HTMLDivElement | null>(null);
   const pendingElapsed = useRef<number | null>(null);
+  /** True while the scene's script is still being read — the cut is held open until it finishes. */
+  const narrating = useRef(true);
 
   const slide = slides[index];
   const durations = useMemo(() => slides.map(slideDuration), [slides]);
