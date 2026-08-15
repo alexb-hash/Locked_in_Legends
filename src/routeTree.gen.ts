@@ -17,7 +17,6 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
-import { Route as ApiPublicSeedAdminRouteImport } from './routes/api/public/seed-admin'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,11 +57,6 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const ApiPublicSeedAdminRoute = ApiPublicSeedAdminRouteImport.update({
-  id: '/api/public/seed-admin',
-  path: '/api/public/seed-admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -72,7 +66,6 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/home': typeof AuthenticatedHomeRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/api/public/seed-admin': typeof ApiPublicSeedAdminRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -82,7 +75,6 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/home': typeof AuthenticatedHomeRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/api/public/seed-admin': typeof ApiPublicSeedAdminRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -94,7 +86,6 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
-  '/api/public/seed-admin': typeof ApiPublicSeedAdminRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -106,7 +97,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/home'
     | '/profile'
-    | '/api/public/seed-admin'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -116,7 +106,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/home'
     | '/profile'
-    | '/api/public/seed-admin'
   id:
     | '__root__'
     | '/'
@@ -127,7 +116,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_authenticated/home'
     | '/_authenticated/profile'
-    | '/api/public/seed-admin'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -137,7 +125,6 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
-  ApiPublicSeedAdminRoute: typeof ApiPublicSeedAdminRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -198,13 +185,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/public/seed-admin': {
-      id: '/api/public/seed-admin'
-      path: '/api/public/seed-admin'
-      fullPath: '/api/public/seed-admin'
-      preLoaderRoute: typeof ApiPublicSeedAdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -228,7 +208,6 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
-  ApiPublicSeedAdminRoute: ApiPublicSeedAdminRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
