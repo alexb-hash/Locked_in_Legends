@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { Flame, Info } from "lucide-react";
+import { ArrowLeft, Flame, Info } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Ambience } from "@/components/motion/Ambience";
@@ -98,6 +98,12 @@ function LeaguesPage() {
   return (
     <div className="relative mx-auto w-full max-w-3xl px-5 py-10 sm:px-8 lg:py-14">
       <Ambience intensity="soft" className="fixed" />
+
+      <Button asChild variant="ghost" size="icon" className="press mb-4 rounded-xl">
+        <Link to="/home" aria-label="Back to dashboard">
+          <ArrowLeft className="size-4" />
+        </Link>
+      </Button>
 
       <Reveal>
         <div className="flex items-end justify-center gap-3 sm:gap-6">
