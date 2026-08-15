@@ -132,20 +132,24 @@ export function PresenterStage({
     const swayY = Math.sin(t * 0.53 + 0.8) * 0.45 + (noise(t * 0.8 + 40) - 0.5) * 0.4;
     const tilt = Math.sin(t * 0.34 + 0.4) * 0.7 + (noise(t * 0.5 + 90) - 0.5) * 0.6;
     const emphasis = voiced ? openness * 0.35 : 0;
-    const energy = voiced ? 0.35 + openness * 0.65 : 0.12;
+    // Glow and the level meter follow a slow, smooth loudness curve rather than each syllable,
+    // so nothing on screen strobes or flickers.
+    const level = voiced ? 0.42 + (Math.sin(t * 0.9) * 0.5 + 0.5) * 0.35 + noise(t * 0.5) * 0.12 : 0.14;
 
     return {
       active,
-      energy,
+      level,
       portrait: {
         transform: `translate3d(${(swayX * 0.9).toFixed(2)}%, ${(swayY * 0.7 + breath * 0.35 - emphasis * 0.4).toFixed(2)}%, 0) rotate(${tilt.toFixed(2)}deg) scale(${(1.05 + breath * 0.008 + emphasis * 0.006).toFixed(4)})`,
       } as React.CSSProperties,
-      bloom: { opacity: 0.2 + energy * 0.5, transform: `scale(${(1 + energy * 0.05).toFixed(3)})` } as React.CSSProperties,
-      bars: Array.from({ length: 14 }, (_, i) =>
-        voiced
-          ? 0.15 + openness * (0.55 + noise(t * (7 + i) + i * 3.1) * 0.65)
-          : 0.1 + 0.05 * Math.abs(Math.sin(t * 1.3 + i)),
-      ),
+      bloom: { opacity: 0.26 + level * 0.22, transform: `scale(${(1 + level * 0.03).toFixed(3)})` } as React.CSSProperties,
+      // Gentle travelling wave: each bar eases toward its neighbour's height, and values are
+      // rounded so they only change a few times a second.
+      bars: Array.from({ length: 14 }, (_, i) => {
+        const wave = Math.sin(t * 1.5 - i * 0.5) * 0.5 + 0.5;
+        const v = voiced ? 0.3 + level * (0.35 + wave * 0.45) : 0.14 + wave * 0.05;
+        return Math.round(v * 12) / 12;
+      }),
     };
   }, [frame, poses, speaking]);
 
@@ -170,7 +174,7 @@ export function PresenterStage({
               aria-hidden={u !== look.active}
               onError={() => setBroken((b) => (b[u] ? b : { ...b, [u]: true }))}
               className={cn(
-                "absolute inset-0 h-full w-full object-cover object-top transition-opacity duration-[45ms] ease-linear",
+                "absolute inset-0 h-full w-full object-cover object-top transition-opacity duration-[70ms] ease-linear",
                 u === look.active ? "opacity-100" : "opacity-0",
               )}
               draggable={false}
@@ -182,8 +186,8 @@ export function PresenterStage({
 
         <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full border border-white/15 bg-black/45 px-2 py-1 backdrop-blur-md">
           <span
-            className="size-1.5 rounded-full bg-red-400"
-            style={{ opacity: 0.4 + look.energy * 0.6, boxShadow: "0 0 8px oklch(0.7 0.18 25)" }}
+            className="size-1.5 rounded-full bg-red-400/90"
+            style={{ boxShadow: "0 0 6px oklch(0.7 0.18 25 / 0.7)" }}
           />
           <span className="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-white/85">On air</span>
         </div>
@@ -192,7 +196,11 @@ export function PresenterStage({
           <p className="truncate text-[0.72rem] font-semibold tracking-tight text-white">{name}</p>
           <div className="flex h-4 items-end gap-[3px]">
             {look.bars.map((v, i) => (
-              <span key={i} className="w-full rounded-full bg-primary/85" style={{ height: `${Math.max(8, v * 100)}%` }} />
+              <span
+                key={i}
+                className="w-full rounded-full bg-primary/70 transition-[height] duration-300 ease-out"
+                style={{ height: `${Math.max(14, v * 100)}%` }}
+              />
             ))}
           </div>
         </div>
