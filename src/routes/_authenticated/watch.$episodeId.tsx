@@ -677,11 +677,14 @@ function PlayerStage({
     // The take starts at the scrubbed word, so rewinding the timeline rewinds the voice with it.
     const offset = Math.max(0, Math.min(script.length, narrationStart));
     const take = script.slice(offset);
-    if (!armed || !take) {
+    // While the viewer is dragging the scrubber the voice stays silent; the take is (re)started from
+    // the released position so audio can never keep running ahead of the picture.
+    if (!armed || !take || scrubbing) {
       synth?.cancel();
       setSpeaking(false);
       return;
     }
+
 
     // Muted: walk the whole script's words on an estimated clock so the mouth still matches text.
     if (!voiceOn || !synth) {
