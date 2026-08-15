@@ -3,6 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, CheckCircle2, Clock, Play, Sparkles } from "lucide-react";
 
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
+import { AnimateCastButton } from "@/components/series/AnimateCastButton";
 import { DeleteSeriesButton } from "@/components/series/DeleteSeriesButton";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -73,13 +74,17 @@ function SeriesPage() {
             </Link>
           </Button>
           {series && series.owner_id === user?.id && (
+            <div className="flex items-center gap-2">
+            <AnimateCastButton seriesId={series.id} topic={series.subject ?? series.title} />
             <DeleteSeriesButton
               seriesId={series.id}
               title={series.title}
               variant="button"
               onDeleted={() => navigate({ to: "/episodes" })}
             />
+            </div>
           )}
+
         </div>
 
         <div

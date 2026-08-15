@@ -44,6 +44,51 @@ export type Database = {
         }
         Relationships: []
       }
+      character_frames: {
+        Row: {
+          character_id: string
+          created_at: string
+          id: string
+          kind: string
+          owner_id: string
+          series_id: string | null
+          url: string
+        }
+        Insert: {
+          character_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          owner_id: string
+          series_id?: string | null
+          url: string
+        }
+        Update: {
+          character_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          owner_id?: string
+          series_id?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_frames_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_frames_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       characters: {
         Row: {
           created_at: string
@@ -200,6 +245,7 @@ export type Database = {
       }
       episode_slides: {
         Row: {
+          art_url: string | null
           bullets: Json
           created_at: string
           episode_id: string
@@ -209,6 +255,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          art_url?: string | null
           bullets?: Json
           created_at?: string
           episode_id: string
@@ -218,6 +265,7 @@ export type Database = {
           title: string
         }
         Update: {
+          art_url?: string | null
           bullets?: Json
           created_at?: string
           episode_id?: string

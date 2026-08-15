@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadCastPhotos, uploadMaterial } from "@/lib/cast";
+import { generateCharacterArt, generateSceneArt } from "@/lib/art.functions";
 import { generateSeriesCover } from "@/lib/covers.functions";
 import { buildEpisode, startGeneration } from "@/lib/generate.functions";
 import { cn } from "@/lib/utils";
@@ -80,6 +81,8 @@ function CreatePage() {
   const start = useServerFn(startGeneration);
   const build = useServerFn(buildEpisode);
   const makeCover = useServerFn(generateSeriesCover);
+  const makeCast = useServerFn(generateCharacterArt);
+  const makeScenes = useServerFn(generateSceneArt);
 
   const [step, setStep] = useState(0);
   const [topic, setTopic] = useState("");
@@ -216,14 +219,31 @@ function CreatePage() {
       setStage("Painting the cover art");
       void makeCover({ data: { seriesId: plan.seriesId, title: plan.title, topic: topic.trim() } }).catch(() => {});
 
+      // Draw the cast: uploaded photos are references only — every pose the student sees is generated.
+      const castIds = savedCast.map((c) => c.id).filter((id): id is string => Boolean(id));
+      if (castIds.length) {
+        setStage("Drawing the cast");
+        void Promise.all(
+          castIds.map((characterId) => makeCast({ data: { characterId, seriesId: plan.seriesId } }).catch(() => null)),
+        );
+      }
+
+      const episodeIds: string[] = [];
       for (let i = 0; i < plan.episodeTitles.length; i += 1) {
         const res = await build({ data: { jobId: plan.jobId, index: i, topic: topic.trim(), cast: savedCast } });
+        if (res.episodeId) episodeIds.push(res.episodeId);
         setDoneCount(res.done);
         setProgress(Math.round(18 + (res.done / res.total) * 82));
       }
 
+      setStage("Painting the scenes");
+      void Promise.all(
+        episodeIds.map((episodeId) => makeScenes({ data: { episodeId, topic: topic.trim() } }).catch(() => null)),
+      );
+
       setStage("Final cut delivered");
       setProgress(100);
+
       toast.success("Your series is ready");
     } catch (error) {
       setRunning(false);

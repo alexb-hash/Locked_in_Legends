@@ -25,7 +25,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Ambience } from "@/components/motion/Ambience";
-import { PresenterStage } from "@/components/player/PresenterStage";
+import { PresenterStage, type PresenterFrames } from "@/components/player/PresenterStage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -51,7 +51,15 @@ export const Route = createFileRoute("/_authenticated/watch/$episodeId")({
   component: WatchPage,
 });
 
-type Slide = { id: string; order_index: number; title: string; bullets: unknown; takeaway: string | null };
+type Slide = {
+  id: string;
+  order_index: number;
+  title: string;
+  bullets: unknown;
+  takeaway: string | null;
+  art_url?: string | null;
+};
+
 type Question = {
   id: string;
   order_index: number;
@@ -102,7 +110,7 @@ function WatchPage() {
         supabase.from("episodes").select("id, title, synopsis, series_id, order_index").eq("id", episodeId).maybeSingle(),
         supabase
           .from("episode_slides")
-          .select("id, order_index, title, bullets, takeaway")
+          .select("id, order_index, title, bullets, takeaway, art_url")
           .eq("episode_id", episodeId)
           .order("order_index", { ascending: true }),
         supabase
@@ -111,24 +119,29 @@ function WatchPage() {
           .eq("episode_id", episodeId)
           .order("order_index", { ascending: true }),
       ]);
-      // The cast member who anchors the broadcast: their reference photo drives the live presenter.
-      let presenter: { name: string; src: string } | null = null;
+      // The on-air presenter is drawn from AI-generated pose art, never from the uploaded photo.
+      let presenter: { name: string; frames: PresenterFrames } | null = null;
       if (episode?.series_id) {
         const { data: cast } = await supabase
           .from("series_characters")
-          .select("characters(name, image_urls)")
+          .select("character_id, characters(name)")
+          .eq("series_id", episode.series_id);
+        const { data: art } = await supabase
+          .from("character_frames")
+          .select("character_id, kind, url")
           .eq("series_id", episode.series_id);
         for (const row of cast ?? []) {
-          const c = (row as { characters: { name: string | null; image_urls: unknown } | null }).characters;
-          const urls = Array.isArray(c?.image_urls) ? (c!.image_urls as unknown[]) : [];
-          const first = urls.find((u): u is string => typeof u === "string" && u.length > 0);
-          if (first) {
-            presenter = { name: c?.name ?? "Presenter", src: first };
-            break;
-          }
+          const r = row as { character_id: string; characters: { name: string | null } | null };
+          const mine = (art ?? []).filter((f) => f.character_id === r.character_id);
+          if (!mine.length) continue;
+          const frames: PresenterFrames = {};
+          for (const f of mine) frames[f.kind as keyof PresenterFrames] = f.url;
+          presenter = { name: r.characters?.name ?? "Presenter", frames };
+          break;
         }
       }
       return { episode, slides: (slides ?? []) as Slide[], questions: (questions ?? []) as Question[], presenter };
+
     },
   });
 
@@ -340,7 +353,7 @@ function PlayerStage({
   quiz,
 }: {
   title: string;
-  presenter: { name: string; src: string } | null;
+  presenter: { name: string; frames: PresenterFrames } | null;
   slides: Slide[];
   index: number;
   paused: boolean;
@@ -583,6 +596,29 @@ function PlayerStage({
       >
         <Ambience intensity="bold" className="absolute inset-0" />
 
+        {/* Generated scene backdrop, slow-pushed for depth behind the presenter and text. */}
+        <AnimatePresence initial={false}>
+          {slide?.art_url && (
+            <motion.img
+              key={slide.art_url}
+              src={slide.art_url}
+              alt=""
+              aria-hidden
+              initial={{ opacity: 0, scale: 1.12 }}
+              animate={{ opacity: 0.5, scale: 1.02 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+              style={{ transform: `scale(${(1.02 + 0.05 * progress).toFixed(4)})` }}
+            />
+          )}
+        </AnimatePresence>
+        {slide?.art_url && (
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,oklch(0.14_0.01_290/0.55),oklch(0.14_0.01_290/0.85))]" />
+        )}
+
+
+
         <AnimatePresence initial={false}>
           <motion.section
             key={slide?.id ?? index}
@@ -595,7 +631,7 @@ function PlayerStage({
             {/* Broadcast anchor: its own column, so it never sits on top of the lesson. */}
             {presenter && (
               <PresenterStage
-                src={presenter.src}
+                frames={presenter.frames}
                 name={presenter.name}
                 speaking={speaking && active}
                 frame={globalFrame}
