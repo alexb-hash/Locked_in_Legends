@@ -95,7 +95,9 @@ export function AppSidebar() {
         )}
       >
         <div className={cn("flex items-center gap-3 px-4 pt-5", collapsed && "justify-center px-0")}>
-          <StudlyLogo className={collapsed ? "h-9" : "h-11"} />
+          <Link to="/team" aria-label="About the team" className="press rounded-xl">
+            <StudlyLogo className={collapsed ? "h-9" : "h-11"} />
+          </Link>
         </div>
 
 
