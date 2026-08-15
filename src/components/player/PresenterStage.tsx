@@ -86,7 +86,7 @@ export function PresenterStage({
                 aria-hidden
                 onError={() => setBroken((current) => ({ ...current, [midLayer]: true }))}
                 className="absolute inset-0 h-full w-full object-cover object-top"
-                style={{ opacity: mouthOpacity(0.12) }}
+                style={{ opacity: midOpacity }}
                 draggable={false}
               />
             ) : null}
