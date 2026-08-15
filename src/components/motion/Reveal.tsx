@@ -31,8 +31,8 @@ function StaticReveal({
   delay = 0,
 }: {
   children: ReactNode;
-  className?: string;
-  delay?: number;
+  className?: string | undefined;
+  delay?: number | undefined;
 }) {
   return (
     <div className={cn("reveal-css", className)} style={{ animationDelay: `${delay}s` }}>
