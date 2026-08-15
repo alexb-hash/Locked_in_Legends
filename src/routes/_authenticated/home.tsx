@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Flame, Layers, PlayCircle, Sparkles, Target, Trophy } from "lucide-react";
 
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { trophyFor } from "@/lib/trophies";
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
@@ -52,6 +53,7 @@ function HomePage() {
     },
   });
 
+  const trophy = trophyFor(league?.tier);
   const xp = profile?.xp ?? 0;
   const levelXp = xp % 500;
   const level = Math.floor(xp / 500) + 1;
@@ -92,12 +94,23 @@ function HomePage() {
                 {500 - levelXp} XP to your next level. Finish an episode or ace a pop quiz to move up.
               </p>
               <Progress value={(levelXp / 500) * 100} className="mt-5 h-2 bg-surface-2" />
+              <div className="mt-6 flex flex-wrap gap-2">
+                <Button asChild className="press glow-ring h-11 rounded-2xl px-5">
+                  <Link to="/episodes">
+                    <PlayCircle className="mr-1.5 size-4" /> Start an episode
+                  </Link>
+                </Button>
+                <Button asChild variant="secondary" className="press h-11 rounded-2xl px-5">
+                  <Link to="/leagues">View league</Link>
+                </Button>
+              </div>
             </div>
             <Floaty className="shrink-0">
               <div className="grid size-28 place-items-center rounded-full bg-primary/15 ring-1 ring-primary/30">
-                <Trophy className="size-12 text-gold" />
+                <img src={trophy.url} alt={`${league?.name ?? "Bronze"} league trophy`} className="h-16 w-auto" />
               </div>
             </Floaty>
+
           </div>
         </div>
       </Reveal>
