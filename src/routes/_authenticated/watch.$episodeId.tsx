@@ -627,6 +627,16 @@ function PlayerStage({
 
         </AnimatePresence>
 
+        {/* Live presenter: the cast face, re-composited every 24fps frame while the lesson plays. */}
+        {presenter && (
+          <PresenterCanvas
+            src={presenter.src}
+            name={presenter.name}
+            speaking={speaking && active}
+            className="absolute right-[4%] top-[6%] z-20 aspect-[3/4] w-[20%] min-w-24 shadow-glow-sm"
+          />
+        )}
+
         {/* Captions */}
         {captionsOn && caption && (
           <div
