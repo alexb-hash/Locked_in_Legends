@@ -21,7 +21,6 @@ import {
   X,
 } from "lucide-react";
 
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Ambience } from "@/components/motion/Ambience";
@@ -41,10 +40,14 @@ export const Route = createFileRoute("/_authenticated/watch/$episodeId")({
       { title: "Watch an episode — slides, takeaways and pop quizzes | Studly" },
       {
         name: "description",
-        content: "Move through an episode slide by slide and answer timed pop-up quizzes to lock the ideas in.",
+        content:
+          "Move through an episode slide by slide and answer timed pop-up quizzes to lock the ideas in.",
       },
       { property: "og:title", content: "Studly episode player" },
-      { property: "og:description", content: "Bite-sized slides, timed pop quizzes and instant explanations." },
+      {
+        property: "og:description",
+        content: "Bite-sized slides, timed pop quizzes and instant explanations.",
+      },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -108,7 +111,11 @@ function WatchPage() {
     queryKey: ["episode", episodeId],
     queryFn: async () => {
       const [{ data: episode }, { data: slides }, { data: questions }] = await Promise.all([
-        supabase.from("episodes").select("id, title, synopsis, series_id, order_index").eq("id", episodeId).maybeSingle(),
+        supabase
+          .from("episodes")
+          .select("id, title, synopsis, series_id, order_index")
+          .eq("id", episodeId)
+          .maybeSingle(),
         supabase
           .from("episode_slides")
           .select("id, order_index, title, bullets, takeaway, art_url")
@@ -116,7 +123,9 @@ function WatchPage() {
           .order("order_index", { ascending: true }),
         supabase
           .from("episode_questions")
-          .select("id, order_index, prompt, options, correct_index, explanation, seconds, kind, answer_text")
+          .select(
+            "id, order_index, prompt, options, correct_index, explanation, seconds, kind, answer_text",
+          )
           .eq("episode_id", episodeId)
           .order("order_index", { ascending: true }),
       ]);
@@ -130,9 +139,16 @@ function WatchPage() {
             .select("character_id, created_at, characters(name)")
             .eq("series_id", episode.series_id)
             .order("created_at", { ascending: true }),
-          supabase.from("character_frames").select("character_id, kind, url").eq("series_id", episode.series_id),
+          supabase
+            .from("character_frames")
+            .select("character_id, kind, url")
+            .eq("series_id", episode.series_id),
         ]);
-        const rows = (cast ?? []) as { character_id: string; created_at: string; characters: { name: string | null } | null }[];
+        const rows = (cast ?? []) as {
+          character_id: string;
+          created_at: string;
+          characters: { name: string | null } | null;
+        }[];
         const chosen = rows[0];
         if (chosen) {
           const frames: PresenterFrames = {};
@@ -143,11 +159,14 @@ function WatchPage() {
         }
       }
 
-      return { episode, slides: (slides ?? []) as Slide[], questions: (questions ?? []) as Question[], presenter };
-
+      return {
+        episode,
+        slides: (slides ?? []) as Slide[],
+        questions: (questions ?? []) as Question[],
+        presenter,
+      };
     },
   });
-
 
   const slides = data?.slides ?? [];
   const questions = data?.questions ?? [];
@@ -159,8 +178,11 @@ function WatchPage() {
     const map = new Map<number, Question>();
     if (!total || questions.length === 0) return map;
     questions.forEach((q, i) => {
-      const at = Math.min(total - 1, Math.round(((i + 1) * total) / questions.length) - 1);
-      map.set(at, q);
+      let at = Math.min(total - 1, Math.round(((i + 1) * total) / questions.length) - 1);
+      // Never drop a question by overwriting a slot: shift it to the next free scene, then backwards.
+      while (map.has(at) && at < total - 1) at += 1;
+      while (map.has(at) && at > 0) at -= 1;
+      if (!map.has(at)) map.set(at, q);
     });
     return map;
   }, [questions, total]);
@@ -189,11 +211,20 @@ function WatchPage() {
     if (slide) void saveProgress({ last_slide_index: index });
   }, [index, slide, saveProgress]);
 
+  /** Guards against double-crediting when the end of the runtime and the last quiz land together. */
+  const finishing = useRef(false);
+
   async function finish() {
+    if (finishing.current) return;
+    finishing.current = true;
     setFinished(true);
     pop("correct");
     const perfect = wrong === 0 && questions.length > 0;
-    await saveProgress({ last_slide_index: total - 1, completed: true, perfect_quiz: perfect });
+    await saveProgress({
+      last_slide_index: Math.max(0, total - 1),
+      completed: true,
+      perfect_quiz: perfect,
+    });
     let gained = 0;
     const complete = await awardXp("episode_complete", XP.episodeComplete, `episode:${episodeId}`);
     gained += complete.awarded;
@@ -203,17 +234,22 @@ function WatchPage() {
       gained += bonus.awarded;
     }
     setEarned((prev) => prev + gained);
-    if (complete.awarded > 0) {
-      const { data: prof } = await supabase.from("profiles").select("episodes_completed").eq("id", user!.id).maybeSingle();
+    if (complete.awarded > 0 && user) {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("episodes_completed")
+        .eq("id", user.id)
+        .maybeSingle();
       await supabase
         .from("profiles")
         .update({ episodes_completed: (prof?.episodes_completed ?? 0) + 1 })
-        .eq("id", user!.id);
+        .eq("id", user.id);
     }
     await refreshProfile();
   }
 
   function advance() {
+    if (total === 0 || quiz) return;
     const due = quizAt.get(index);
     if (due && !asked.includes(due.id)) {
       setAsked((prev) => [...prev, due.id]);
@@ -225,18 +261,29 @@ function WatchPage() {
     else void finish();
   }
 
-  async function handleAnswer(question: Question, answer: { index: number | null; text: string | null }, correct: boolean, ms: number) {
+  async function handleAnswer(
+    question: Question,
+    answer: { index: number | null; text: string | null },
+    correct: boolean,
+    ms: number,
+  ) {
     const selected = answer.index;
     if (correct) {
       const res = await awardXp("quiz_correct", XP.correctAnswer, `q:${question.id}`);
       setEarned((prev) => prev + res.awarded);
       setStreak(res.current_streak);
-      const { data: prof } = await supabase.from("profiles").select("correct_answers").eq("id", user!.id).maybeSingle();
-      await supabase
-        .from("profiles")
-        .update({ correct_answers: (prof?.correct_answers ?? 0) + 1 })
-        .eq("id", user!.id);
-      await refreshProfile();
+      if (user) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("correct_answers")
+          .eq("id", user.id)
+          .maybeSingle();
+        await supabase
+          .from("profiles")
+          .update({ correct_answers: (prof?.correct_answers ?? 0) + 1 })
+          .eq("id", user.id);
+        await refreshProfile();
+      }
     } else {
       setWrong((prev) => prev + 1);
     }
@@ -246,7 +293,9 @@ function WatchPage() {
         episode_id: episodeId,
         question_id: question.id,
         question_text: question.prompt,
-        selected_answer: answer.text ?? (selected === null ? null : asStrings(question.options)[selected] ?? null),
+        selected_answer:
+          answer.text ??
+          (selected === null ? null : (asStrings(question.options)[selected] ?? null)),
         is_correct: correct,
         time_taken_ms: ms,
         timed_out: selected === null && !answer.text,
@@ -269,7 +318,9 @@ function WatchPage() {
           </span>
           <h1 className="mt-5 font-display text-2xl font-bold">Episode complete</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {wrong === 0 && questions.length > 0 ? "Perfect quiz run — nothing slipped past you." : "Nice work. Review the misses and go again."}
+            {wrong === 0 && questions.length > 0
+              ? "Perfect quiz run — nothing slipped past you."
+              : "Nice work. Review the misses and go again."}
           </p>
           <div className="mt-6 flex items-center justify-center gap-3 text-sm">
             <span className="flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 font-semibold text-primary">
@@ -284,7 +335,12 @@ function WatchPage() {
           <div className="mt-7 flex flex-col gap-2">
             <Button
               className="press h-11 rounded-2xl"
-              onClick={() => navigate({ to: "/series/$seriesId", params: { seriesId: data!.episode!.series_id } })}
+              onClick={() =>
+                navigate({
+                  to: "/series/$seriesId",
+                  params: { seriesId: data!.episode!.series_id },
+                })
+              }
             >
               Next episode
             </Button>
@@ -332,7 +388,9 @@ function WatchPage() {
 function slideDuration(slide: Slide | undefined) {
   if (!slide) return 6000;
   const bullets = asStrings(slide.bullets);
-  const words = (slide.title + " " + bullets.join(" ") + " " + (slide.takeaway ?? "")).trim().split(/\s+/).length;
+  const words = (slide.title + " " + bullets.join(" ") + " " + (slide.takeaway ?? ""))
+    .trim()
+    .split(/\s+/).length;
   return Math.min(26000, Math.max(6500, 2600 + words * 380));
 }
 
@@ -387,23 +445,47 @@ function PlayerStage({
   const before = durations.slice(0, index).reduce((a, b) => a + b, 0);
   const bullets = asStrings(slide?.bullets);
 
+  /** Live playhead mirror, so the clock never reads stale state inside a frame callback. */
+  const elapsedRef = useRef(0);
+  elapsedRef.current = elapsed;
+  /** One scene can only ever end once, no matter how many signals arrive on the same frame. */
+  const endedRef = useRef(false);
+  /**
+   * The parent hands a fresh callback every render, so it is mirrored in a ref: the 60fps clock
+   * effect must stay mounted for the whole scene instead of restarting (and losing time) each frame.
+   */
+  const onEndedRef = useRef(onEnded);
+  onEndedRef.current = onEnded;
+  const endScene = useCallback(() => {
+    if (endedRef.current) return;
+    endedRef.current = true;
+    onEndedRef.current();
+  }, []);
+
   // Reset the playhead whenever the cut changes (unless we scrubbed into it).
   useEffect(() => {
-    setElapsed(pendingElapsed.current ?? 0);
+    const start = pendingElapsed.current ?? 0;
     pendingElapsed.current = null;
+    elapsedRef.current = start;
+    endedRef.current = false;
+    setElapsed(start);
   }, [index]);
 
   /** Seek anywhere on the runtime, like dragging a video scrubber. */
   const seekToMs = useCallback(
     (ms: number) => {
+      if (totalMs <= 0 || durations.length === 0) return;
       const clamped = Math.max(0, Math.min(totalMs - 1, ms));
       let acc = 0;
       for (let i = 0; i < durations.length; i += 1) {
         const d = durations[i]!;
         if (clamped < acc + d || i === durations.length - 1) {
-          const within = clamped - acc;
-          if (i === index) setElapsed(within);
-          else {
+          const within = Math.max(0, clamped - acc);
+          if (i === index) {
+            elapsedRef.current = within;
+            endedRef.current = false;
+            setElapsed(within);
+          } else {
             pendingElapsed.current = within;
             onSeek(i);
           }
@@ -434,27 +516,31 @@ function PlayerStage({
     let last = performance.now();
     let carry = 0;
     const tick = (now: number) => {
-      carry += (now - last) * rate;
+      // A backgrounded tab can hand back a huge delta; clamp it so playback never jumps a scene.
+      carry += Math.min(250, now - last) * rate;
       last = now;
       const steps = Math.floor(carry / FRAME_MS);
       if (steps > 0) {
         carry -= steps * FRAME_MS;
-        setElapsed((prev) => {
-          const next = prev + steps * FRAME_MS;
-          if (next >= duration) {
-            // Hold the cut open while the script is still being read so nothing gets clipped.
-            if (narrating.current) return duration;
-            onEnded();
-            return duration;
+        const next = elapsedRef.current + steps * FRAME_MS;
+        if (next >= duration) {
+          elapsedRef.current = duration;
+          setElapsed(duration);
+          // Hold the cut open while the script is still being read so nothing gets clipped.
+          if (!narrating.current) {
+            endScene();
+            return;
           }
-          return next;
-        });
+        } else {
+          elapsedRef.current = next;
+          setElapsed(next);
+        }
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [active, duration, onEnded, rate]);
+  }, [active, duration, endScene, rate]);
 
   /** Whole-frame playhead — the single source of truth for every synced overlay. */
   const frame = Math.floor(elapsed / FRAME_MS);
@@ -488,7 +574,9 @@ function PlayerStage({
    */
   const scriptLines = useMemo(() => {
     if (!slide) return [] as { text: string; start: number; end: number }[];
-    const parts = [slide.title, ...bullets, slide.takeaway ?? ""].map((p) => p?.trim()).filter(Boolean) as string[];
+    const parts = [slide.title, ...bullets, slide.takeaway ?? ""]
+      .map((p) => p?.trim())
+      .filter(Boolean) as string[];
     const out: { text: string; start: number; end: number }[] = [];
     let cursor = 0;
     for (const part of parts) {
@@ -506,6 +594,14 @@ function PlayerStage({
   narrating.current = Boolean(script) && !narrationDone;
 
   const spokenWord = useRef<{ text: string; start: number; dur: number } | null>(null);
+  /** Read inside timers/callbacks so pausing never restarts the take from the first word. */
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  /** Narration only begins after playback has actually started (browsers block earlier speech). */
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (active) setArmed(true);
+  }, [active]);
 
   useEffect(() => {
     setSpokenChar(0);
@@ -516,14 +612,26 @@ function PlayerStage({
   // read, move on immediately so nothing is ever cut off mid-sentence.
   useEffect(() => {
     if (!active || !narrationDone) return;
-    if (elapsed >= duration - FRAME_MS) onEnded();
-  }, [active, duration, elapsed, narrationDone, onEnded]);
+    if (elapsed >= duration - FRAME_MS) endScene();
+  }, [active, duration, elapsed, endScene, narrationDone]);
+
+  // Safety net: if the voice engine never reports back (no voices, blocked autoplay, a dropped
+  // utterance), the scene must still finish instead of hanging on the last frame forever.
+  useEffect(() => {
+    if (!script || narrationDone || !armed) return;
+    const budget = splitWords(script).reduce(
+      (sum, w) => sum + estimateWordMs(w.text, Math.min(2, 0.98 * rate)) + 40,
+      0,
+    );
+    const timer = window.setTimeout(() => setNarrationDone(true), budget + 8000);
+    return () => window.clearTimeout(timer);
+  }, [armed, narrationDone, rate, script]);
 
   useEffect(() => {
     const synth = typeof window === "undefined" ? null : window.speechSynthesis;
     const speechRate = Math.min(2, 0.98 * rate);
     spokenWord.current = null;
-    if (!active || !script) {
+    if (!armed || !script) {
       synth?.cancel();
       setSpeaking(false);
       return;
@@ -531,11 +639,19 @@ function PlayerStage({
 
     // Muted: walk the whole script's words on an estimated clock so the mouth still matches text.
     if (!voiceOn || !synth) {
+      synth?.cancel();
       setSpeaking(true);
       const words = splitWords(script);
       let i = 0;
       let timer = 0;
+      let cancelled = false;
       const step = () => {
+        if (cancelled) return;
+        // Hold the walker in place while playback is paused, quizzing or scrubbing.
+        if (!activeRef.current) {
+          timer = window.setTimeout(step, 120);
+          return;
+        }
         const word = words[i];
         if (!word) {
           spokenWord.current = null;
@@ -551,8 +667,10 @@ function PlayerStage({
       };
       step();
       return () => {
+        cancelled = true;
         window.clearTimeout(timer);
         spokenWord.current = null;
+        setSpeaking(false);
       };
     }
 
@@ -566,7 +684,11 @@ function PlayerStage({
       const rest = script.slice(event.charIndex);
       const text = (event.charLength ? rest.slice(0, event.charLength) : rest.split(/\s/)[0]) ?? "";
       if (!text.trim()) return;
-      spokenWord.current = { text, start: performance.now(), dur: estimateWordMs(text, speechRate) };
+      spokenWord.current = {
+        text,
+        start: performance.now(),
+        dur: estimateWordMs(text, speechRate),
+      };
       setSpokenChar(event.charIndex);
     };
     utter.onend = () => {
@@ -585,9 +707,25 @@ function PlayerStage({
       spokenWord.current = null;
       setSpeaking(false);
     };
-  }, [active, script, rate, voiceOn]);
+  }, [armed, script, rate, voiceOn]);
 
-  useEffect(() => () => window.speechSynthesis?.cancel(), []);
+  // Pausing suspends the same take rather than cancelling it, so resuming continues mid-sentence.
+  useEffect(() => {
+    const synth = typeof window === "undefined" ? null : window.speechSynthesis;
+    if (!synth || !voiceOn) return;
+    if (active) {
+      if (synth.paused) synth.resume();
+    } else if (synth.speaking && !synth.paused) {
+      synth.pause();
+    }
+  }, [active, voiceOn]);
+
+  useEffect(
+    () => () => {
+      if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    },
+    [],
+  );
 
   /** Subtitle line: the sentence being read, falling back to the playhead before speech starts. */
   const caption = useMemo(() => {
@@ -608,8 +746,6 @@ function PlayerStage({
     if (p < 0 || p > 1) return 0;
     return mouthForWord(current.text, p);
   }, [active, globalFrame]);
-
-
 
   const nudgeUi = useCallback(() => {
     setUiVisible(true);
@@ -656,7 +792,6 @@ function PlayerStage({
         nudgeUi();
       } else if (e.key === "f") {
         void toggleFullscreen();
-
       }
     };
     window.addEventListener("keydown", onKey);
@@ -664,7 +799,12 @@ function PlayerStage({
   }, [index, nudgeUi, onEnded, onSeek, toggleFullscreen]);
 
   return (
-    <div className={cn("relative mx-auto w-full max-w-5xl px-4 py-6 sm:px-8", fullscreen && "max-w-none px-0 py-0")}>
+    <div
+      className={cn(
+        "relative mx-auto w-full max-w-5xl px-4 py-6 sm:px-8",
+        fullscreen && "max-w-none px-0 py-0",
+      )}
+    >
       {!fullscreen && (
         <div className="mb-4 flex items-center gap-3">
           <Button asChild variant="ghost" size="icon" className="press rounded-xl">
@@ -675,7 +815,8 @@ function PlayerStage({
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{title}</p>
             <p className="text-xs text-muted-foreground">
-              Scene {Math.min(index + 1, slides.length)} of {slides.length} · {formatTime(totalMs)} runtime
+              Scene {Math.min(index + 1, slides.length)} of {slides.length} · {formatTime(totalMs)}{" "}
+              runtime
             </p>
           </div>
         </div>
@@ -713,8 +854,6 @@ function PlayerStage({
           <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(90deg,oklch(0.14_0.01_290/0.55),oklch(0.14_0.01_290/0.85))]" />
         )}
 
-
-
         <AnimatePresence initial={false}>
           <motion.section
             key={slide?.id ?? index}
@@ -728,15 +867,13 @@ function PlayerStage({
             <PresenterStage
               frames={presenter?.frames ?? {}}
               name={presenter?.name ?? "Presenter"}
-              speaking={active}
+              speaking={active && (speaking || !voiceOn)}
               mouth={mouth}
               frame={globalFrame}
               className="aspect-[3/4] h-full max-h-[54%] w-[22%] shrink-0 self-end sm:max-h-[78%] sm:w-[26%] sm:self-center"
             />
 
-
             <div className="min-w-0 flex-1 origin-left will-change-transform" style={camera}>
-
               <p className="text-[clamp(0.6rem,1.1vw,0.8rem)] font-semibold uppercase tracking-[0.2em] text-primary">
                 Scene {Math.min(index + 1, slides.length)}
               </p>
@@ -746,9 +883,13 @@ function PlayerStage({
               <ul className="mt-[3%] space-y-[1.6%]">
                 {bullets.map((b, i) => (
                   <motion.li
-                    key={b}
+                    key={`${i}-${b}`}
                     initial={false}
-                    animate={i < revealed ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 14, filter: "blur(6px)" }}
+                    animate={
+                      i < revealed
+                        ? { opacity: 1, y: 0, filter: "blur(0px)" }
+                        : { opacity: 0, y: 14, filter: "blur(6px)" }
+                    }
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                     className="flex gap-3 text-[clamp(0.75rem,1.3vw,1rem)] leading-relaxed text-foreground/90"
                   >
@@ -768,11 +909,8 @@ function PlayerStage({
                 </motion.p>
               )}
             </div>
-
           </motion.section>
-
         </AnimatePresence>
-
 
         {/* Captions */}
         {captionsOn && caption && (
@@ -834,11 +972,13 @@ function PlayerStage({
               })}
               <span
                 className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow transition-opacity group-hover/bar:opacity-100"
-                style={{ left: `${totalMs ? ((before + elapsed) / totalMs) * 100 : 0}%`, opacity: scrubbing ? 1 : undefined }}
+                style={{
+                  left: `${totalMs ? ((before + elapsed) / totalMs) * 100 : 0}%`,
+                  opacity: scrubbing ? 1 : undefined,
+                }}
               />
             </div>
           </div>
-
 
           <div className="mt-2 flex items-center gap-2 text-white">
             <button
@@ -894,8 +1034,6 @@ function PlayerStage({
                 {voiceOn ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
               </button>
 
-
-
               <button
                 type="button"
                 onClick={() => setRate((r) => (r === 1 ? 1.5 : r === 1.5 ? 2 : r === 2 ? 0.75 : 1))}
@@ -941,31 +1079,39 @@ function PlayerStage({
   );
 }
 
-
 function QuizPopup({
   question,
   onDone,
   onClose,
 }: {
   question: Question;
-  onDone: (answer: { index: number | null; text: string | null }, correct: boolean, ms: number) => Promise<void>;
+  onDone: (
+    answer: { index: number | null; text: string | null },
+    correct: boolean,
+    ms: number,
+  ) => Promise<void>;
   onClose: () => void;
 }) {
   const written = question.kind === "written";
   const options = asStrings(question.options);
-  const [remaining, setRemaining] = useState(question.seconds);
+  /** Bad or missing timer values must never make the countdown instant or divide by zero. */
+  const totalSeconds = Math.max(5, Math.round(question.seconds) || 20);
+  const [remaining, setRemaining] = useState(totalSeconds);
   const [selected, setSelected] = useState<number | null>(null);
   const [typed, setTyped] = useState("");
   const [submitted, setSubmitted] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [correct, setCorrect] = useState(false);
   const started = useRef(Date.now());
+  /** A question can only be graded once, even if a click and the timeout land together. */
+  const settled = useRef(false);
 
   const settle = useCallback(
     (answer: { index: number | null; text: string | null }) => {
-      if (revealed) return;
+      if (settled.current) return;
+      settled.current = true;
       const isCorrect = written
-        ? Boolean(answer.text) && gradeWritten(answer.text!, question.answer_text)
+        ? gradeWritten(answer.text ?? "", question.answer_text)
         : answer.index !== null && answer.index === question.correct_index;
       setSelected(answer.index);
       setSubmitted(answer.text);
@@ -974,27 +1120,29 @@ function QuizPopup({
       pop(isCorrect ? "correct" : "wrong");
       void onDone(answer, isCorrect, Date.now() - started.current);
     },
-    [onDone, question.answer_text, question.correct_index, revealed, written],
+    [onDone, question.answer_text, question.correct_index, written],
   );
 
+  // Deadline-based countdown so a slow frame or a backgrounded tab can't stretch the timer.
   useEffect(() => {
     if (revealed) return;
+    const deadline = started.current + totalSeconds * 1000;
     const timer = window.setInterval(() => {
-      setRemaining((r) => {
-        if (r <= 1) {
-          window.clearInterval(timer);
-          settle({ index: null, text: null });
-          return 0;
-        }
-        return r - 1;
-      });
-    }, 1000);
+      const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      setRemaining(left);
+      if (left <= 0) {
+        window.clearInterval(timer);
+        settle({ index: null, text: null });
+      }
+    }, 250);
     return () => window.clearInterval(timer);
-  }, [revealed, settle]);
+  }, [revealed, settle, totalSeconds]);
 
-  const pct = (remaining / question.seconds) * 100;
+  const pct = Math.max(0, Math.min(100, (remaining / totalSeconds) * 100));
   const susuQuestion = `I got this quiz question wrong: "${question.prompt}". ${
-    written ? `I answered "${submitted ?? "nothing"}".` : `I picked "${selected !== null ? options[selected] : "nothing"}".`
+    written
+      ? `I answered "${submitted ?? "nothing"}".`
+      : `I picked "${selected !== null ? options[selected] : "nothing"}".`
   } Can you help me understand it?`;
 
   return (
@@ -1015,7 +1163,12 @@ function QuizPopup({
           <span className="flex items-center gap-1.5">
             <Sparkles className="size-3.5" /> {written ? "Written pop quiz" : "Pop quiz"}
           </span>
-          <span className={cn("flex items-center gap-1.5 tabular-nums", remaining <= 5 && !revealed && "text-destructive")}>
+          <span
+            className={cn(
+              "flex items-center gap-1.5 tabular-nums",
+              remaining <= 5 && !revealed && "text-destructive",
+            )}
+          >
             <Timer className="size-3.5" /> {remaining}s
           </span>
         </div>
@@ -1047,7 +1200,11 @@ function QuizPopup({
               placeholder="Type your answer"
               className="h-11 rounded-2xl"
             />
-            <Button type="submit" className="press h-11 shrink-0 rounded-2xl" disabled={revealed || !typed.trim()}>
+            <Button
+              type="submit"
+              className="press h-11 shrink-0 rounded-2xl"
+              disabled={revealed || !typed.trim()}
+            >
               Submit
             </Button>
           </form>
@@ -1058,7 +1215,7 @@ function QuizPopup({
               const isPicked = i === selected;
               return (
                 <button
-                  key={opt}
+                  key={`${i}-${opt}`}
                   type="button"
                   disabled={revealed}
                   onClick={() => settle({ index: i, text: opt })}
@@ -1066,7 +1223,10 @@ function QuizPopup({
                     "press flex w-full items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/50 px-4 py-3 text-left text-sm font-medium transition-colors",
                     !revealed && "hover:border-primary/50 hover:bg-primary/10",
                     revealed && isCorrect && "border-primary bg-primary/15 text-primary",
-                    revealed && isPicked && !isCorrect && "border-destructive bg-destructive/15 text-destructive",
+                    revealed &&
+                      isPicked &&
+                      !isCorrect &&
+                      "border-destructive bg-destructive/15 text-destructive",
                   )}
                 >
                   {opt}
@@ -1093,14 +1253,21 @@ function QuizPopup({
             </p>
             {written && !correct && question.answer_text && (
               <p className="mt-1.5 text-sm">
-                The answer was <span className="font-semibold text-primary">{question.answer_text}</span>.
+                The answer was{" "}
+                <span className="font-semibold text-primary">{question.answer_text}</span>.
               </p>
             )}
             <p className="mt-1.5 text-sm text-muted-foreground">{question.explanation}</p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               {!correct && (
                 <Button asChild variant="outline" className="press h-10 flex-1 rounded-2xl">
-                  <Link to="/chat" search={{ q: susuQuestion, ctx: `Question: ${question.prompt}\nCorrect answer explanation: ${question.explanation}` }}>
+                  <Link
+                    to="/chat"
+                    search={{
+                      q: susuQuestion,
+                      ctx: `Question: ${question.prompt}\nCorrect answer explanation: ${question.explanation}`,
+                    }}
+                  >
                     <Sparkles className="mr-1.5 size-4" /> Ask Susu
                   </Link>
                 </Button>
