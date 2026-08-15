@@ -1,9 +1,47 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { Layers, PlayCircle, Sparkles, Target, Trophy, Wand2 } from "lucide-react";
 
 import { Ambience } from "@/components/motion/Ambience";
 import { Floaty, Reveal, RevealGroup, RevealItem } from "@/components/motion/Reveal";
 import { Button } from "@/components/ui/button";
+
+const ROTATING_SUBTITLES = [
+  "Your notes, but actually watchable.",
+  "Your friends, but they're teaching you.",
+  "Your group chat, but somehow educational.",
+  "Your revision, but make it a whole episode.",
+  "Studying, but you actually wanna press play.",
+];
+
+function RotatingSubtitle() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setIndex((prev) => (prev + 1) % ROTATING_SUBTITLES.length);
+    }, 3600);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="relative mx-auto mt-4 h-[1.2em] max-w-xl">
+      <AnimatePresence mode="wait">
+        <motion.p
+          key={index}
+          initial={{ opacity: 0, filter: "blur(14px)", y: 8 }}
+          animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+          exit={{ opacity: 0, filter: "blur(14px)", y: -8 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="font-display text-2xl font-light tracking-tight text-muted-foreground sm:text-3xl"
+        >
+          {ROTATING_SUBTITLES[index]}
+        </motion.p>
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -55,24 +93,13 @@ function Landing() {
         </nav>
       </header>
 
-      <section className="relative mx-auto w-full max-w-4xl px-5 pt-16 pb-10 text-center sm:px-8 sm:pt-24">
+      <section className="relative mx-auto w-full max-w-4xl px-5 pt-20 pb-10 text-center sm:px-8 sm:pt-32">
         <Reveal>
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-4 py-1.5 text-xs font-semibold text-muted-foreground backdrop-blur">
-            <Sparkles className="size-3.5 text-primary" />
-            Your AI study platform
-          </span>
-        </Reveal>
-        <Reveal delay={0.08}>
-          <h1 className="mt-6 font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
-            Study that feels like <span className="text-gradient">bingeing a show</span>
+          <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
+            Make studying <span className="text-gradient">hit different.</span>
           </h1>
         </Reveal>
-        <Reveal delay={0.16}>
-          <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground">
-            Drop in a topic, a PDF or a lecture recording. Studly turns it into episodes, pop quizzes and flashcards —
-            and Susu coaches you through every tricky bit.
-          </p>
-        </Reveal>
+        <RotatingSubtitle />
         <Reveal delay={0.24}>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Button asChild size="lg" className="press glow-ring h-12 rounded-full px-7 text-sm font-semibold">
