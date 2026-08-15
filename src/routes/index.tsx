@@ -584,41 +584,69 @@ const SUSU_SAMPLE = `**Student:** Why does mitosis matter?\n\n**Susu:** Good que
 
 function SusuSpotlight() {
   return (
-    <section className="relative mx-auto w-full max-w-5xl px-5 py-20 sm:px-8">
-      <div className="grid items-center gap-8 sm:grid-cols-2 sm:gap-12">
-        <ScrollReveal>
-          <span className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary ring-1 ring-primary/30">
+    <section className="relative mx-auto w-full max-w-6xl px-5 py-24 sm:px-8">
+      <div className="relative grid items-center gap-10 sm:grid-cols-12">
+        {/* glowing aura panel the chat card overlaps */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-6 right-0 hidden w-[58%] rounded-[2.5rem] sm:block"
+          style={{
+            background:
+              "linear-gradient(140deg, oklch(0.62 0.175 298 / 0.22), oklch(0.55 0.14 320 / 0.08) 55%, transparent)",
+            border: "1px solid oklch(0.7 0.17 300 / 0.22)",
+          }}
+        />
+
+        <MaskReveal from="left" className="relative z-10 sm:col-span-5">
+          <span className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary ring-1 ring-primary/30">
             <Sparkles className="size-3.5" /> Susu
           </span>
-          <h2 className="mt-4 font-display text-2xl font-bold sm:text-3xl">A tutor that coaches, never cheats.</h2>
-          <p className="mt-3 max-w-sm text-sm text-muted-foreground">
-            Susu sits inside the chat like a study buddy who's read every episode. Ask a question mid-quiz and
-            get a Socratic nudge, a mini-quiz, or a flashcard deck — never the answer on a plate.
+          <h2 className="mt-5 font-display text-3xl font-bold leading-[1.05] sm:text-5xl">
+            A tutor that coaches,
+            <br />
+            <span className="text-gradient">never cheats.</span>
+          </h2>
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Susu sits inside the chat like a study buddy who's read every episode. Ask mid-quiz and get a
+            Socratic nudge, a mini-quiz, or a deck — never the answer on a plate.
           </p>
-          <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
-            <li>• Hints that lead you to the "aha"</li>
-            <li>• Generates flashcard decks on request</li>
-            <li>• Follows up straight from a wrong quiz answer</li>
+          <ul className="mt-6 space-y-2.5 text-sm text-muted-foreground">
+            {[
+              "Hints that lead you to the \u201caha\u201d",
+              "Generates flashcard decks on request",
+              "Follows up straight from a wrong quiz answer",
+            ].map((line) => (
+              <li key={line} className="flex items-start gap-2.5">
+                <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
+                {line}
+              </li>
+            ))}
           </ul>
-        </ScrollReveal>
-        <Floaty amount={7}>
-          <ScrollReveal delay={0.1}>
-            <div className="glass-card glow-ring mx-auto max-w-md p-5">
-              <div className="flex items-center gap-2 border-b border-border pb-3">
-                <span className="grid size-7 place-items-center rounded-full bg-primary/15 text-primary ring-1 ring-primary/30">
-                  <GraduationCap className="size-4" />
-                </span>
-                <span className="text-sm font-semibold">Susu</span>
-                <span className="ml-auto flex items-center gap-1 text-xs text-success">
-                  <span className="size-1.5 rounded-full bg-success" /> online
-                </span>
-              </div>
-              <div className="pt-3 text-sm text-muted-foreground">
-                <Markdown content={SUSU_SAMPLE} />
-              </div>
-            </div>
-          </ScrollReveal>
-        </Floaty>
+        </MaskReveal>
+
+        {/* card breaks its column, tilts, and overlaps the aura panel */}
+        <div className="relative z-10 sm:col-span-7 sm:-ml-12">
+          <Parallax depth={40} rotate={1.6}>
+            <Floaty amount={7}>
+              <MaskReveal delay={0.12}>
+                <div className="glass-card edge-bleed grain glow-ring relative mx-auto max-w-md rotate-[-1.5deg] p-5 sm:rotate-[-2.5deg]">
+                  <div className="flex items-center gap-2 border-b border-border pb-3">
+                    <span className="grid size-7 place-items-center rounded-full bg-primary/15 text-primary ring-1 ring-primary/30">
+                      <GraduationCap className="size-4" />
+                    </span>
+                    <span className="text-sm font-semibold">Susu</span>
+                    <span className="ml-auto flex items-center gap-1 text-xs text-success">
+                      <span className="size-1.5 rounded-full bg-success" /> online
+                    </span>
+                  </div>
+                  <div className="relative z-[1] pt-3 text-sm text-muted-foreground">
+                    <Markdown content={SUSU_SAMPLE} />
+                  </div>
+                </div>
+              </MaskReveal>
+            </Floaty>
+          </Parallax>
+        </div>
       </div>
     </section>
   );
@@ -630,64 +658,86 @@ function SusuSpotlight() {
 
 function LeaguesShowcase() {
   return (
-    <section className="relative mx-auto w-full max-w-6xl px-5 py-20 sm:px-8">
-      <ScrollReveal className="text-center">
-        <h2 className="font-display text-2xl font-bold sm:text-3xl">Two-week seasons. Promotion is the goal.</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          Climb six tiers, keep your streak lit, and finish the season in the top three.
-        </p>
-      </ScrollReveal>
+    <section className="relative mx-auto w-full max-w-6xl px-5 py-24 sm:px-8">
+      <div className="grid gap-10 sm:grid-cols-12">
+        <MaskReveal from="left" className="sm:col-span-5">
+          <h2 className="font-display text-3xl font-bold leading-[1.05] sm:text-5xl">
+            Two-week seasons.
+            <br />
+            <span className="text-gradient">Promotion is the goal.</span>
+          </h2>
+          <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
+            Climb six tiers, keep your streak lit, and finish the season in the top three.
+          </p>
 
-      <ScrollRevealGroup className="mt-10 flex flex-wrap items-end justify-center gap-4 sm:gap-6">
-        {LEAGUE_TIERS.map((tier, i) => {
-          const t = TROPHIES[tier]!;
-          return (
-            <RevealItem key={tier}>
-              <div className="flex flex-col items-center gap-2">
-                <div
-                  className="relative grid size-16 place-items-center rounded-2xl bg-surface-2 ring-1 ring-border sm:size-20"
-                  style={{ boxShadow: `0 14px 40px -22px ${t.glow}` }}
-                >
-                  <img
-                    src={t.url}
-                    alt={t.name}
-                    className="size-12 object-contain drop-shadow-[0_0_16px_var(--color-primary)] sm:size-14"
-                    style={{ filter: `drop-shadow(0 0 10px ${t.glow})` }}
-                  />
-                  {i === 0 && (
-                    <span className="absolute -top-2 -right-2 rounded-full bg-primary px-2 py-0.5 text-[0.6rem] font-bold text-primary-foreground">
-                      You
-                    </span>
-                  )}
-                </div>
-                <span className="text-xs font-semibold text-muted-foreground">{t.name}</span>
-              </div>
-            </RevealItem>
-          );
-        })}
-      </ScrollRevealGroup>
+          <ScrollReveal delay={0.15} className="mt-7 space-y-3">
+            <div className="glass-card lift flex items-center gap-2 px-4 py-2.5">
+              <Flame className="size-4 text-gold" />
+              <span className="text-sm font-semibold">5-day streak</span>
+            </div>
+            <div className="glass-card lift flex items-center gap-3 px-4 py-2.5">
+              <span className="grid size-7 place-items-center rounded-full bg-gold/20 font-display text-xs font-bold text-gold ring-1 ring-gold/40">
+                1
+              </span>
+              <span className="text-sm">
+                <span className="font-semibold">adminns</span>{" "}
+                <span className="text-muted-foreground">· 2,480 XP</span>
+              </span>
+            </div>
+            <div className="glass-card lift ml-6 flex items-center gap-3 px-4 py-2.5">
+              <span className="grid size-7 place-items-center rounded-full bg-muted/50 font-display text-xs font-bold text-muted-foreground">
+                2
+              </span>
+              <span className="text-sm text-muted-foreground">2,110 XP</span>
+            </div>
+          </ScrollReveal>
+        </MaskReveal>
 
-      <ScrollReveal delay={0.15} className="mt-8 flex flex-wrap items-center justify-center gap-3">
-        <div className="glass-card flex items-center gap-2 px-4 py-2">
-          <Flame className="size-4 text-gold" />
-          <span className="text-sm font-semibold">5-day streak</span>
+        {/* trophies scattered off-grid inside a tilted studio panel */}
+        <div className="relative sm:col-span-7">
+          <Parallax depth={30} rotate={-1.4}>
+            <div className="tile grain relative overflow-hidden p-6 sm:p-8">
+              <div
+                aria-hidden
+                className="animate-aurora pointer-events-none absolute -top-24 left-1/3 size-72 rounded-full blur-3xl"
+                style={{ background: "radial-gradient(circle, oklch(0.62 0.175 298 / 0.35), transparent 70%)" }}
+              />
+              <ScrollRevealGroup className="relative z-[1] grid grid-cols-3 gap-x-4 gap-y-7 sm:grid-cols-3">
+                {LEAGUE_TIERS.map((tier, i) => {
+                  const t = TROPHIES[tier]!;
+                  const offsets = ["", "sm:translate-y-6", "sm:-translate-y-3", "sm:translate-y-4", "", "sm:translate-y-7"];
+                  return (
+                    <RevealItem key={tier} className={offsets[i % offsets.length]}>
+                      <Floaty amount={5} delay={i * 0.35}>
+                        <div className="flex flex-col items-center gap-2">
+                          <div
+                            className="lift relative grid size-16 place-items-center rounded-2xl bg-surface-2 ring-1 ring-border sm:size-20"
+                            style={{ boxShadow: `0 16px 46px -22px ${t.glow}` }}
+                          >
+                            <img
+                              src={t.url}
+                              alt={t.name}
+                              loading="lazy"
+                              className="size-12 object-contain sm:size-14"
+                              style={{ filter: `drop-shadow(0 0 12px ${t.glow})` }}
+                            />
+                            {i === 0 && (
+                              <span className="absolute -top-2 -right-2 rounded-full bg-primary px-2 py-0.5 text-[0.6rem] font-bold text-primary-foreground">
+                                You
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs font-semibold text-muted-foreground">{t.name}</span>
+                        </div>
+                      </Floaty>
+                    </RevealItem>
+                  );
+                })}
+              </ScrollRevealGroup>
+            </div>
+          </Parallax>
         </div>
-        <div className="glass-card flex items-center gap-3 px-4 py-2">
-          <span className="grid size-7 place-items-center rounded-full bg-gold/20 font-display text-xs font-bold text-gold ring-1 ring-gold/40">
-            1
-          </span>
-          <span className="text-sm">
-            <span className="font-semibold">adminns</span>{" "}
-            <span className="text-muted-foreground">· 2,480 XP</span>
-          </span>
-        </div>
-        <div className="glass-card flex items-center gap-3 px-4 py-2">
-          <span className="grid size-7 place-items-center rounded-full bg-muted/50 font-display text-xs font-bold text-muted-foreground">
-            2
-          </span>
-          <span className="text-sm text-muted-foreground">2,110 XP</span>
-        </div>
-      </ScrollReveal>
+      </div>
     </section>
   );
 }
@@ -748,7 +798,7 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <main className="relative min-h-screen overflow-hidden">
+    <main className="grain relative min-h-screen overflow-hidden">
       <Ambience density={20} />
 
       <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-6 sm:px-8">
@@ -767,8 +817,8 @@ function Landing() {
 
       <section className="relative mx-auto w-full max-w-3xl px-5 pt-16 pb-10 text-center sm:px-8 sm:pt-24">
         <ScrollReveal>
-          <h1 className="font-sans text-3xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
-            Make studying <span className="text-gradient">hit different.</span>
+          <h1 className="font-display text-4xl font-bold leading-[1.02] tracking-[-0.03em] sm:text-6xl">
+            <WordReveal text="Make studying hit different." accentFrom={2} delay={0.15} />
           </h1>
         </ScrollReveal>
         <RotatingSubtitle />
@@ -787,6 +837,7 @@ function Landing() {
       </section>
 
       <HowItWorks />
+      <CapabilityBento />
       <SusuSpotlight />
       <LeaguesShowcase />
       <FinalCta />
