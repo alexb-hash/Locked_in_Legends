@@ -1029,19 +1029,24 @@ function QuizPopup({
 }) {
   const written = question.kind === "written";
   const options = asStrings(question.options);
-  const [remaining, setRemaining] = useState(question.seconds);
+  /** Bad or missing timer values must never make the countdown instant or divide by zero. */
+  const totalSeconds = Math.max(5, Math.round(question.seconds) || 20);
+  const [remaining, setRemaining] = useState(totalSeconds);
   const [selected, setSelected] = useState<number | null>(null);
   const [typed, setTyped] = useState("");
   const [submitted, setSubmitted] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [correct, setCorrect] = useState(false);
   const started = useRef(Date.now());
+  /** A question can only be graded once, even if a click and the timeout land together. */
+  const settled = useRef(false);
 
   const settle = useCallback(
     (answer: { index: number | null; text: string | null }) => {
-      if (revealed) return;
+      if (settled.current) return;
+      settled.current = true;
       const isCorrect = written
-        ? Boolean(answer.text) && gradeWritten(answer.text!, question.answer_text)
+        ? Boolean(answer.text) && gradeWritten(answer.text, question.answer_text)
         : answer.index !== null && answer.index === question.correct_index;
       setSelected(answer.index);
       setSubmitted(answer.text);
@@ -1050,25 +1055,25 @@ function QuizPopup({
       pop(isCorrect ? "correct" : "wrong");
       void onDone(answer, isCorrect, Date.now() - started.current);
     },
-    [onDone, question.answer_text, question.correct_index, revealed, written],
+    [onDone, question.answer_text, question.correct_index, written],
   );
 
+  // Deadline-based countdown so a slow frame or a backgrounded tab can't stretch the timer.
   useEffect(() => {
     if (revealed) return;
+    const deadline = started.current + totalSeconds * 1000;
     const timer = window.setInterval(() => {
-      setRemaining((r) => {
-        if (r <= 1) {
-          window.clearInterval(timer);
-          settle({ index: null, text: null });
-          return 0;
-        }
-        return r - 1;
-      });
-    }, 1000);
+      const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      setRemaining(left);
+      if (left <= 0) {
+        window.clearInterval(timer);
+        settle({ index: null, text: null });
+      }
+    }, 250);
     return () => window.clearInterval(timer);
-  }, [revealed, settle]);
+  }, [revealed, settle, totalSeconds]);
 
-  const pct = (remaining / question.seconds) * 100;
+  const pct = Math.max(0, Math.min(100, (remaining / totalSeconds) * 100));
   const susuQuestion = `I got this quiz question wrong: "${question.prompt}". ${
     written ? `I answered "${submitted ?? "nothing"}".` : `I picked "${selected !== null ? options[selected] : "nothing"}".`
   } Can you help me understand it?`;
