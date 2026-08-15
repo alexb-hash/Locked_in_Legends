@@ -695,7 +695,7 @@ function PlayerStage({
 
       {!fullscreen && (
         <p className="mt-3 text-center text-xs text-muted-foreground">
-          Space to play/pause · ← → to skip scenes · F for full screen
+          Space to play/pause · ← → to skip scenes · C for captions · F for full screen
         </p>
       )}
     </div>
