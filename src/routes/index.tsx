@@ -620,7 +620,9 @@ function Landing() {
 
       <footer className="relative mx-auto w-full max-w-6xl px-5 pb-10 pt-4 sm:px-8">
         <div className="flex flex-col items-center gap-2 border-t border-border pt-6 text-center">
-          <StudlyLogo className="h-7" />
+          <Link to="/team" aria-label="About the team" className="press rounded-xl">
+            <StudlyLogo className="h-7" />
+          </Link>
           <p className="text-xs text-muted-foreground">The Netflix of studying. Built for the curious.</p>
         </div>
       </footer>
