@@ -539,6 +539,14 @@ function PlayerStage({
   narrating.current = Boolean(script) && !narrationDone;
 
   const spokenWord = useRef<{ text: string; start: number; dur: number } | null>(null);
+  /** Read inside timers/callbacks so pausing never restarts the take from the first word. */
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  /** Narration only begins after playback has actually started (browsers block earlier speech). */
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (active) setArmed(true);
+  }, [active]);
 
   useEffect(() => {
     setSpokenChar(0);
@@ -549,14 +557,23 @@ function PlayerStage({
   // read, move on immediately so nothing is ever cut off mid-sentence.
   useEffect(() => {
     if (!active || !narrationDone) return;
-    if (elapsed >= duration - FRAME_MS) onEnded();
-  }, [active, duration, elapsed, narrationDone, onEnded]);
+    if (elapsed >= duration - FRAME_MS) endScene();
+  }, [active, duration, elapsed, endScene, narrationDone]);
+
+  // Safety net: if the voice engine never reports back (no voices, blocked autoplay, a dropped
+  // utterance), the scene must still finish instead of hanging on the last frame forever.
+  useEffect(() => {
+    if (!script || narrationDone || !armed) return;
+    const budget = splitWords(script).reduce((sum, w) => sum + estimateWordMs(w.text, Math.min(2, 0.98 * rate)) + 40, 0);
+    const timer = window.setTimeout(() => setNarrationDone(true), budget + 8000);
+    return () => window.clearTimeout(timer);
+  }, [armed, narrationDone, rate, script]);
 
   useEffect(() => {
     const synth = typeof window === "undefined" ? null : window.speechSynthesis;
     const speechRate = Math.min(2, 0.98 * rate);
     spokenWord.current = null;
-    if (!active || !script) {
+    if (!armed || !script) {
       synth?.cancel();
       setSpeaking(false);
       return;
@@ -564,11 +581,19 @@ function PlayerStage({
 
     // Muted: walk the whole script's words on an estimated clock so the mouth still matches text.
     if (!voiceOn || !synth) {
+      synth?.cancel();
       setSpeaking(true);
       const words = splitWords(script);
       let i = 0;
       let timer = 0;
+      let cancelled = false;
       const step = () => {
+        if (cancelled) return;
+        // Hold the walker in place while playback is paused, quizzing or scrubbing.
+        if (!activeRef.current) {
+          timer = window.setTimeout(step, 120);
+          return;
+        }
         const word = words[i];
         if (!word) {
           spokenWord.current = null;
@@ -584,8 +609,10 @@ function PlayerStage({
       };
       step();
       return () => {
+        cancelled = true;
         window.clearTimeout(timer);
         spokenWord.current = null;
+        setSpeaking(false);
       };
     }
 
@@ -618,9 +645,25 @@ function PlayerStage({
       spokenWord.current = null;
       setSpeaking(false);
     };
-  }, [active, script, rate, voiceOn]);
+  }, [armed, script, rate, voiceOn]);
 
-  useEffect(() => () => window.speechSynthesis?.cancel(), []);
+  // Pausing suspends the same take rather than cancelling it, so resuming continues mid-sentence.
+  useEffect(() => {
+    const synth = typeof window === "undefined" ? null : window.speechSynthesis;
+    if (!synth || !voiceOn) return;
+    if (active) {
+      if (synth.paused) synth.resume();
+    } else if (synth.speaking && !synth.paused) {
+      synth.pause();
+    }
+  }, [active, voiceOn]);
+
+  useEffect(
+    () => () => {
+      if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    },
+    [],
+  );
 
   /** Subtitle line: the sentence being read, falling back to the playhead before speech starts. */
   const caption = useMemo(() => {
