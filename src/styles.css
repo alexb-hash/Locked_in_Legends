@@ -325,7 +325,7 @@
       transparent 62%
     );
     background-size: 220% 100%;
-    animation: shimmer 4.2s linear infinite;
+    animation: shimmer 8s ease-in-out infinite;
     pointer-events: none;
     z-index: 1;
   }
