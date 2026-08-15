@@ -687,6 +687,7 @@ function PlayerStage({
               frames={presenter?.frames ?? {}}
               name={presenter?.name ?? "Presenter"}
               speaking={active}
+              mouth={mouth}
               frame={globalFrame}
               className="aspect-[3/4] h-full max-h-[54%] w-[22%] shrink-0 self-end sm:max-h-[78%] sm:w-[26%] sm:self-center"
             />
