@@ -568,7 +568,8 @@ function PlayerStage({
                   Takeaway · {slide.takeaway}
                 </motion.p>
               )}
-            </motion.div>
+            </div>
+
           </motion.section>
 
         </AnimatePresence>
