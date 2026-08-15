@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { awardXpFn, type AwardResult } from "@/lib/learning.functions";
 
 export const XP = {
   correctAnswer: 10,
@@ -6,25 +6,13 @@ export const XP = {
   perfectEpisode: 25,
 } as const;
 
-export type AwardResult = {
-  awarded: number;
-  total_xp: number;
-  current_streak: number;
-  streak_incremented: boolean;
-};
+export type { AwardResult };
 
 /** Grants XP through the server-side award engine. `sourceKey` makes the award idempotent. */
 export async function awardXp(kind: string, amount: number, sourceKey?: string) {
-  const { data, error } = await supabase.rpc("award_xp", {
-    _kind: kind,
-    _amount: amount,
-    ...(sourceKey ? { _source_key: sourceKey } : {}),
-  });
-
-  if (error) throw error;
-  const row = (Array.isArray(data) ? data[0] : data) as AwardResult | undefined;
-  return row ?? { awarded: 0, total_xp: 0, current_streak: 0, streak_incremented: false };
+  return await awardXpFn({ data: { kind, amount, ...(sourceKey ? { sourceKey } : {}) } });
 }
+
 
 let ctx: AudioContext | null = null;
 
