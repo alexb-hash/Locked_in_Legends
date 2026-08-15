@@ -60,7 +60,10 @@ export function PresenterStage({
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const urls = [...new Set([...order.talk, order.idle, order.blink].filter(Boolean))];
-    if (!urls.length) return;
+    if (!urls.length) {
+      setReady(true);
+      return;
+    }
     let left = urls.length;
     urls.forEach((u) => {
       const img = new Image();
