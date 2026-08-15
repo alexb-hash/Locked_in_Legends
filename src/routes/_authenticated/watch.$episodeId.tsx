@@ -392,10 +392,14 @@ function WatchPage() {
 function slideDuration(slide: Slide | undefined) {
   if (!slide) return 6000;
   const bullets = asStrings(slide.bullets);
-  const words = (slide.title + " " + bullets.join(" ") + " " + (slide.takeaway ?? ""))
-    .trim()
-    .split(/\s+/).length;
-  return Math.min(26000, Math.max(6500, 2600 + words * 380));
+  const script = [slide.title, ...bullets, slide.takeaway ?? ""].filter(Boolean).join(". ");
+  const spokenMs = splitWords(script).reduce(
+    (sum, word) => sum + estimateWordMs(word.text, 0.98) + 40,
+    0,
+  );
+  // Size each scene from its complete spoken lesson. There is deliberately no upper cap: long
+  // teaching material must keep the broadcast clock and presenter alive until its final word.
+  return Math.max(6500, 1800 + spokenMs);
 }
 
 /** Broadcast frame rate: 60fps, i.e. one frame every ~16.67ms. */
@@ -596,15 +600,15 @@ function PlayerStage({
       if (steps > 0) {
         carry -= steps * FRAME_MS;
         const next = elapsedRef.current + steps * FRAME_MS;
-        if (next >= duration) {
+        if (next >= duration && !narrating.current) {
           elapsedRef.current = duration;
           setElapsed(duration);
-          // Hold the cut open while the script is still being read so nothing gets clipped.
-          if (!narrating.current) {
-            endScene();
-            return;
-          }
+          endScene();
+          return;
         } else {
+          // If the real browser voice runs longer than its estimate, keep advancing beyond the
+          // planned cut. This keeps the timer, captions and 60fps presenter motion running instead
+          // of freezing on the last frame while audio continues.
           elapsedRef.current = next;
           setElapsed(next);
         }
@@ -620,6 +624,8 @@ function PlayerStage({
   const frameTime = frame * FRAME_MS;
   const globalFrame = Math.floor((before + elapsed) / FRAME_MS);
   const progress = duration ? Math.min(1, frameTime / duration) : 0;
+  const overtime = Math.max(0, elapsed - duration);
+  const displayedTotalMs = totalMs + overtime;
 
   /** Camera move, evaluated per frame so it stays locked to the playhead (even when scrubbing). */
   const camera = useMemo(() => {
@@ -647,10 +653,7 @@ function PlayerStage({
    */
   const scriptLines = useMemo(() => {
     if (!slide) return [] as { text: string; start: number; end: number }[];
-    const introduction = index === 0 && presenter?.name
-      ? `I'm ${presenter.name}`
-      : "";
-    const parts = [introduction, slide.title, ...bullets, slide.takeaway ?? ""]
+    const parts = [slide.title, ...bullets, slide.takeaway ?? ""]
       .map((p) => p?.trim())
       .filter(Boolean) as string[];
     const out: { text: string; start: number; end: number }[] = [];
@@ -660,7 +663,7 @@ function PlayerStage({
       cursor += part.length + 2; // joined with ". "
     }
     return out;
-  }, [bullets, index, presenter?.name, slide]);
+  }, [bullets, slide]);
   const script = useMemo(() => scriptLines.map((l) => l.text).join(". "), [scriptLines]);
   /** Read by the seek handler, which runs outside render. */
   const scriptRef = useRef(script);
@@ -702,15 +705,23 @@ function PlayerStage({
     if (elapsed >= duration - FRAME_MS) endScene();
   }, [active, duration, elapsed, endScene, narrationDone]);
 
-  // Safety net: if the voice engine never reports back (no voices, blocked autoplay, a dropped
-  // utterance), the scene must still finish instead of hanging on the last frame forever.
+  // Safety net: if the voice engine never reports back, hand narration to the deterministic word
+  // clock. Never mark the lesson complete on a timer while audible speech may still be running.
   useEffect(() => {
     if (!script || narrationDone || !armed || !active) return;
     const budget = splitWords(script.slice(narrationStart)).reduce(
       (sum, w) => sum + estimateWordMs(w.text, Math.min(2, 0.98 * rate)) + 40,
       0,
     );
-    const timer = window.setTimeout(() => setNarrationDone(true), budget + 8000);
+    const timer = window.setTimeout(() => {
+      if (!activeRef.current || narrationDone) return;
+      speechRun.current += 1;
+      window.speechSynthesis?.cancel();
+      spokenWord.current = null;
+      setSpeaking(false);
+      setNarrationStart((current) => Math.max(current, spokenCharRef.current));
+      setSpeechFailed(true);
+    }, budget + 8000);
     return () => window.clearTimeout(timer);
   }, [active, armed, narrationDone, narrationStart, rate, script]);
 
@@ -1075,7 +1086,7 @@ function PlayerStage({
             tabIndex={0}
             aria-label="Seek"
             aria-valuemin={0}
-            aria-valuemax={Math.round(totalMs / 1000)}
+            aria-valuemax={Math.round(displayedTotalMs / 1000)}
             aria-valuenow={Math.round((before + elapsed) / 1000)}
             onPointerDown={startScrub}
             className="group/bar relative cursor-pointer touch-none py-2"
@@ -1083,7 +1094,9 @@ function PlayerStage({
             <div className="relative h-1.5 rounded-full bg-white/25 transition-all group-hover/bar:h-2.5">
               <div
                 className="absolute inset-y-0 left-0 rounded-full bg-primary"
-                style={{ width: `${totalMs ? ((before + elapsed) / totalMs) * 100 : 0}%` }}
+                style={{
+                  width: `${displayedTotalMs ? Math.min(100, ((before + elapsed) / displayedTotalMs) * 100) : 0}%`,
+                }}
               />
               {/* chapter dividers */}
               {durations.slice(0, -1).map((_, i) => {
@@ -1099,7 +1112,7 @@ function PlayerStage({
               <span
                 className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow transition-opacity group-hover/bar:opacity-100"
                 style={{
-                  left: `${totalMs ? ((before + elapsed) / totalMs) * 100 : 0}%`,
+                  left: `${displayedTotalMs ? Math.min(100, ((before + elapsed) / displayedTotalMs) * 100) : 0}%`,
                   opacity: scrubbing ? 1 : undefined,
                 }}
               />
@@ -1132,7 +1145,7 @@ function PlayerStage({
               <SkipForward className="size-4" />
             </button>
             <span className="ml-1 text-xs tabular-nums text-white/80">
-              {formatTime(before + elapsed)} / {formatTime(totalMs)}
+              {formatTime(before + elapsed)} / {formatTime(displayedTotalMs)}
             </span>
             <span className="ml-auto flex items-center gap-2">
               <button
