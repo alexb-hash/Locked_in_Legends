@@ -25,7 +25,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Ambience } from "@/components/motion/Ambience";
-import { PresenterStage } from "@/components/player/PresenterStage";
+import { PresenterStage, type PresenterFrames } from "@/components/player/PresenterStage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -345,7 +345,7 @@ function PlayerStage({
   quiz,
 }: {
   title: string;
-  presenter: { name: string; src: string } | null;
+  presenter: { name: string; frames: PresenterFrames } | null;
   slides: Slide[];
   index: number;
   paused: boolean;
@@ -600,7 +600,7 @@ function PlayerStage({
             {/* Broadcast anchor: its own column, so it never sits on top of the lesson. */}
             {presenter && (
               <PresenterStage
-                src={presenter.src}
+                frames={presenter.frames}
                 name={presenter.name}
                 speaking={speaking && active}
                 frame={globalFrame}
