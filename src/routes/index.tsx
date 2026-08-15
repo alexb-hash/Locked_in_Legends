@@ -308,13 +308,13 @@ const STEPS = [
     mock: (
       <div className="glass-card flex items-center gap-3 p-4">
         {[
-          { name: "Dr. Mo", c: "M" },
-          { name: "Lex", c: "L" },
-          { name: "Iris", c: "I" },
+          { name: "Dr. Mo", src: castMo.url },
+          { name: "Lex", src: castLex.url },
+          { name: "Iris", src: castIris.url },
         ].map((p) => (
           <div key={p.name} className="flex flex-col items-center gap-1">
-            <div className="grid size-11 place-items-center rounded-full bg-primary/15 font-semibold text-primary ring-1 ring-primary/30">
-              {p.c}
+            <div className="size-11 overflow-hidden rounded-full bg-primary/15 ring-1 ring-primary/30">
+              <img src={p.src} alt={`${p.name}, a Studly cast reference photo`} loading="lazy" className="size-full object-cover" />
             </div>
             <span className="text-xs text-muted-foreground">{p.name}</span>
           </div>
