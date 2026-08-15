@@ -38,6 +38,7 @@ import { StudlyLogo } from "@/components/brand/StudlyLogo";
 import { Markdown } from "@/components/chat/Markdown";
 import { Button } from "@/components/ui/button";
 import { LEAGUE_TIERS, TROPHIES } from "@/lib/trophies";
+import { PresenterStage } from "@/components/player/PresenterStage";
 
 const ROTATING_SUBTITLES = [
   "Your notes, but actually watchable.",
@@ -120,8 +121,6 @@ function HeroPreview() {
   const progress = f / LOOP;
 
   // 12fps drawn cadence for the mouth, blink beat every ~2.5s.
-  const blinking = f % 150 > 138;
-  const pose = PRESENTER_POSES[Math.floor(f / 5) % PRESENTER_POSES.length]!;
   const revealed = Math.min(PREVIEW_SLIDE.bullets.length, Math.floor(progress * (PREVIEW_SLIDE.bullets.length + 1)));
   const caption =
     PREVIEW_SLIDE.captions[Math.min(PREVIEW_SLIDE.captions.length - 1, Math.max(0, revealed - 1))]!;
