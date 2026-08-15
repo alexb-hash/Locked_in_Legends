@@ -281,6 +281,7 @@ function WatchPage() {
   return (
     <PlayerStage
       title={data?.episode?.title ?? "Episode"}
+      presenter={data?.presenter ?? null}
       slides={slides}
       index={index}
       paused={Boolean(quiz)}
