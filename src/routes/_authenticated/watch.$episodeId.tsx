@@ -596,6 +596,29 @@ function PlayerStage({
       >
         <Ambience intensity="bold" className="absolute inset-0" />
 
+        {/* Generated scene backdrop, slow-pushed for depth behind the presenter and text. */}
+        <AnimatePresence initial={false}>
+          {slide?.art_url && (
+            <motion.img
+              key={slide.art_url}
+              src={slide.art_url}
+              alt=""
+              aria-hidden
+              initial={{ opacity: 0, scale: 1.12 }}
+              animate={{ opacity: 0.5, scale: 1.02 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+              style={{ transform: `scale(${(1.02 + 0.05 * progress).toFixed(4)})` }}
+            />
+          )}
+        </AnimatePresence>
+        {slide?.art_url && (
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,oklch(0.14_0.01_290/0.55),oklch(0.14_0.01_290/0.85))]" />
+        )}
+
+
+
         <AnimatePresence initial={false}>
           <motion.section
             key={slide?.id ?? index}
