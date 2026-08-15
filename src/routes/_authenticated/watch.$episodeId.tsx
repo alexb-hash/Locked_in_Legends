@@ -822,7 +822,7 @@ function PlayerStage({
               <ul className="mt-[3%] space-y-[1.6%]">
                 {bullets.map((b, i) => (
                   <motion.li
-                    key={b}
+                    key={`${i}-${b}`}
                     initial={false}
                     animate={i < revealed ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 14, filter: "blur(6px)" }}
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
