@@ -333,8 +333,8 @@ function slideDuration(slide: Slide | undefined) {
   return Math.min(26000, Math.max(6500, 2600 + words * 380));
 }
 
-/** Broadcast frame rate: 24fps, i.e. one frame every ~41.67ms. */
-const FPS = 24;
+/** Broadcast frame rate: 60fps, i.e. one frame every ~16.67ms. */
+const FPS = 60;
 const FRAME_MS = 1000 / FPS;
 
 function formatTime(ms: number) {
@@ -421,7 +421,7 @@ function PlayerStage({
 
   const active = playing && !paused && !scrubbing && slides.length > 0;
 
-  // Broadcast clock: the playhead only ever lands on whole 24fps frames (41.67ms),
+  // Broadcast clock: the playhead only ever lands on whole 60fps frames (16.67ms),
   // so every text reveal, caption and camera move is quantised to the same frame grid.
   useEffect(() => {
     if (!active) return;

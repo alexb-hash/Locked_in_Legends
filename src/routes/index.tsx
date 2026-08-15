@@ -101,11 +101,11 @@ const PREVIEW_SLIDE = {
 const PRESENTER_POSES = [presenterClosed, presenterMid, presenterOpen, presenterMid];
 
 /**
- * Mirrors the real player: one 24fps broadcast clock drives the pose cycle,
+ * Mirrors the real player: one 60fps broadcast clock drives the pose cycle,
  * the caption line, the bullet reveals and the camera drift — nothing is clicked.
  */
 function HeroPreview() {
-  const [tick, setTick] = useState(0); // frames on the 24fps grid
+  const [tick, setTick] = useState(0); // frames on the 60fps grid
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
@@ -113,27 +113,27 @@ function HeroPreview() {
     let raf = 0;
     const start = performance.now();
     const loop = (now: number) => {
-      setTick(Math.floor((now - start) / (1000 / 24)));
+      setTick(Math.floor((now - start) / (1000 / 60)));
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [paused]);
 
-  const LOOP = 24 * 9; // 9 second loop
+  const LOOP = 60 * 9; // 9 second loop
   const f = tick % LOOP;
   const progress = f / LOOP;
 
   // 12fps drawn cadence for the mouth, blink beat every ~2.5s.
-  const blinking = f % 60 > 55;
-  const pose = PRESENTER_POSES[Math.floor(f / 2) % PRESENTER_POSES.length]!;
+  const blinking = f % 150 > 138;
+  const pose = PRESENTER_POSES[Math.floor(f / 5) % PRESENTER_POSES.length]!;
   const revealed = Math.min(PREVIEW_SLIDE.bullets.length, Math.floor(progress * (PREVIEW_SLIDE.bullets.length + 1)));
   const caption =
     PREVIEW_SLIDE.captions[Math.min(PREVIEW_SLIDE.captions.length - 1, Math.max(0, revealed - 1))]!;
 
   // Slow camera push on the generated backdrop, computed per frame like the player.
-  const camScale = 1.06 + Math.sin(f / 90) * 0.03;
-  const camX = Math.sin(f / 120) * 8;
+  const camScale = 1.06 + Math.sin(f / 225) * 0.03;
+  const camX = Math.sin(f / 300) * 8;
 
   return (
     <Floaty className="mt-28 sm:mt-40" amount={10}>
@@ -343,7 +343,7 @@ const STEPS = [
   {
     n: 3,
     title: "Press play — it broadcasts itself",
-    body: "Your cast broadcasts the lesson on a 24fps illustrated stage — talking, blinking, synced captions, pop-up quizzes. No slides to click. Then flashcards and Susu take over.",
+    body: "Your cast broadcasts the lesson on a 60fps illustrated stage — talking, blinking, synced captions, pop-up quizzes. No slides to click. Then flashcards and Susu take over.",
     icons: [Clapperboard],
     mock: (
       <div className="relative mx-auto h-52 w-full max-w-sm sm:h-56">
@@ -496,7 +496,7 @@ const CAPABILITIES = [
   {
     icon: Clapperboard,
     title: "Episodes that play themselves",
-    body: "A 24fps illustrated stage, synced captions, no slide clicking.",
+    body: "A 60fps illustrated stage, synced captions, no slide clicking.",
     span: "sm:col-span-7 sm:row-span-2",
     big: true,
   },
