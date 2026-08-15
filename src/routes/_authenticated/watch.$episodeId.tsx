@@ -994,7 +994,12 @@ function PlayerStage({
               uiVisible || !playing ? "bottom-24" : "bottom-10",
             )}
           >
-            <p className="max-w-[80%] rounded-xl bg-black/65 px-3 py-1.5 text-center text-[clamp(0.75rem,1.3vw,1rem)] font-medium leading-snug text-white backdrop-blur-sm">
+            <p className={cn(
+              "max-w-[80%] rounded-xl bg-black/65 px-3 py-1.5 text-center font-medium leading-snug text-white backdrop-blur-sm",
+              fullscreen
+                ? "text-[clamp(1rem,1.6vw,1.5rem)]"
+                : "text-[clamp(0.75rem,1.3vw,1rem)]",
+            )}>
               {caption}
             </p>
           </div>
