@@ -543,7 +543,7 @@ function Landing() {
       <HowItWorks />
       <SusuSpotlight />
       <LeaguesShowcase />
-      <FinalCtA />
+      <FinalCta />
 
       <footer className="relative mx-auto w-full max-w-6xl px-5 pb-10 pt-4 sm:px-8">
         <div className="flex flex-col items-center gap-2 border-t border-border pt-6 text-center">
