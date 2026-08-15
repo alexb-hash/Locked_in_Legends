@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { Camera, Loader2, Save, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -11,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { moderateImage } from "@/lib/moderation.functions";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
@@ -24,8 +26,19 @@ export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
 });
 
+/** Reads an image file as a data URL for server-side moderation. */
+function readAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("read failed"));
+    reader.readAsDataURL(file);
+  });
+}
+
 function ProfilePage() {
   const { profile, user, refreshProfile } = useAuth();
+  const review = useServerFn(moderateImage);
   const fileInput = useRef<HTMLInputElement>(null);
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
@@ -77,6 +90,21 @@ function ProfilePage() {
       return;
     }
     setUploading(true);
+
+    try {
+      const dataUrl = await readAsDataUrl(file);
+      const verdict = await review({ data: { dataUrl } });
+      if (!verdict.safe) {
+        setUploading(false);
+        toast.error(verdict.reason || "That image isn't allowed as a profile picture.");
+        return;
+      }
+    } catch {
+      setUploading(false);
+      toast.error("We couldn't check that image. Try another one.");
+      return;
+    }
+
     const ext = file.name.split(".").pop() ?? "png";
     const path = `${user.id}/avatar-${Date.now()}.${ext}`;
     const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
@@ -85,7 +113,11 @@ function ProfilePage() {
       toast.error("Upload failed. Try a different image.");
       return;
     }
-    const { error } = await supabase.from("profiles").update({ avatar_path: path }).eq("id", user.id);
+    const { data: signed } = await supabase.storage.from("avatars").createSignedUrl(path, 60 * 60 * 24 * 365);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_path: path, avatar_url: signed?.signedUrl ?? null })
+      .eq("id", user.id);
     setUploading(false);
     if (error) {
       toast.error("We couldn't attach that avatar.");
