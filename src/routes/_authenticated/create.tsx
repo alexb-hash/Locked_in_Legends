@@ -550,7 +550,11 @@ function CreatePage() {
                     <div className="flex justify-between gap-4">
                       <dt className="text-muted-foreground">Cast</dt>
                       <dd className="text-right font-medium">
-                        {cast.filter((c) => c.name.trim()).map((c) => c.name.trim()).join(", ") || "narrator only"}
+                        {[
+                          ...pickedIds.map((id) => savedChars.find((c) => c.id === id)?.name).filter(Boolean),
+                          ...cast.filter((c) => c.name.trim()).map((c) => c.name.trim()),
+                        ].join(", ") || "narrator only"}
+
                       </dd>
                     </div>
                   </dl>
