@@ -219,13 +219,18 @@ function CreatePage() {
       setStage("Painting the cover art");
       void makeCover({ data: { seriesId: plan.seriesId, title: plan.title, topic: topic.trim() } }).catch(() => {});
 
-      // Draw the cast: uploaded photos are references only — every pose the student sees is generated.
+      // Draw the selected lead first and wait for it so the episode never opens with a substitute.
+      // Supporting cast can finish in the background after the lead is safely available.
       const castIds = savedCast.map((c) => c.id).filter((id): id is string => Boolean(id));
       if (castIds.length) {
         setStage("Drawing the cast");
-        void Promise.all(
-          castIds.map((characterId) => makeCast({ data: { characterId, seriesId: plan.seriesId } }).catch(() => null)),
-        );
+        const [leadId, ...supportingIds] = castIds;
+        if (leadId) await makeCast({ data: { characterId: leadId, seriesId: plan.seriesId } }).catch(() => null);
+        if (supportingIds.length) {
+          void Promise.all(
+            supportingIds.map((characterId) => makeCast({ data: { characterId, seriesId: plan.seriesId } }).catch(() => null)),
+          );
+        }
       }
 
       const episodeIds: string[] = [];

@@ -119,18 +119,20 @@ function WatchPage() {
           .eq("episode_id", episodeId)
           .order("order_index", { ascending: true }),
       ]);
-      // The on-air presenter is drawn from AI-generated pose art, never from the uploaded photo.
-      // If a series has no generated art yet, the presenter still goes on air with the built-in
-      // illustrated anchor so the broadcast never silently loses its character.
-      let presenter: { name: string; frames: PresenterFrames } = { name: "Susu", frames: {} };
+      // The first cast member selected for the series is always the presenter. Never substitute a
+      // different cast member simply because their generated art happened to finish first.
+      let presenter: { name: string; frames: PresenterFrames } | null = null;
       if (episode?.series_id) {
         const [{ data: cast }, { data: art }] = await Promise.all([
-          supabase.from("series_characters").select("character_id, characters(name)").eq("series_id", episode.series_id),
+          supabase
+            .from("series_characters")
+            .select("character_id, created_at, characters(name)")
+            .eq("series_id", episode.series_id)
+            .order("created_at", { ascending: true }),
           supabase.from("character_frames").select("character_id, kind, url").eq("series_id", episode.series_id),
         ]);
-        const rows = (cast ?? []) as { character_id: string; characters: { name: string | null } | null }[];
-        const withArt = rows.find((r) => (art ?? []).some((f) => f.character_id === r.character_id));
-        const chosen = withArt ?? rows[0];
+        const rows = (cast ?? []) as { character_id: string; created_at: string; characters: { name: string | null } | null }[];
+        const chosen = rows[0];
         if (chosen) {
           const frames: PresenterFrames = {};
           for (const f of (art ?? []).filter((f) => f.character_id === chosen.character_id)) {
@@ -596,7 +598,7 @@ function PlayerStage({
       >
         <Ambience intensity="bold" className="absolute inset-0" />
 
-        {/* Generated scene backdrop, slow-pushed for depth behind the presenter and text. */}
+        {/* Generated scene backdrop is permanently below the presenter and lesson content. */}
         <AnimatePresence initial={false}>
           {slide?.art_url && (
             <motion.img
@@ -608,13 +610,13 @@ function PlayerStage({
               animate={{ opacity: 0.5, scale: 1.02 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+              className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover"
               style={{ transform: `scale(${(1.02 + 0.05 * progress).toFixed(4)})` }}
             />
           )}
         </AnimatePresence>
         {slide?.art_url && (
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,oklch(0.14_0.01_290/0.55),oklch(0.14_0.01_290/0.85))]" />
+          <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(90deg,oklch(0.14_0.01_290/0.55),oklch(0.14_0.01_290/0.85))]" />
         )}
 
 
@@ -626,12 +628,12 @@ function PlayerStage({
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
             exit={{ opacity: 0, scale: 1.01, filter: "blur(8px)" }}
             transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 flex items-center gap-[4%] px-[5%] pb-[12%] pt-[5%]"
+            className="absolute inset-0 z-10 flex items-center gap-[4%] px-[5%] pb-[12%] pt-[5%]"
           >
             {/* Broadcast anchor: its own column, so it never sits on top of the lesson. */}
             <PresenterStage
               frames={presenter?.frames ?? {}}
-              name={presenter?.name ?? "Susu"}
+              name={presenter?.name ?? "Presenter"}
               speaking={active}
               frame={globalFrame}
               className="aspect-[3/4] h-full max-h-[54%] w-[22%] shrink-0 self-end sm:max-h-[78%] sm:w-[26%] sm:self-center"
