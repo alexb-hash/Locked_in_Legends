@@ -21,9 +21,6 @@ import {
 import castIris from "@/assets/cast/cast-iris.webp.asset.json";
 import castLex from "@/assets/cast/cast-lex.webp.asset.json";
 import castMo from "@/assets/cast/cast-mo.jpeg.asset.json";
-import presenterClosed from "@/assets/presenter-demo-closed.jpg";
-import presenterMid from "@/assets/presenter-demo-mid.jpg";
-import presenterOpen from "@/assets/presenter-demo-open.jpg";
 import sceneBackdrop from "@/assets/scene-demo-backdrop.jpg";
 import { Ambience } from "@/components/motion/Ambience";
 import {
@@ -98,8 +95,6 @@ const PREVIEW_SLIDE = {
   ],
 };
 
-const PRESENTER_POSES = [presenterClosed, presenterMid, presenterOpen, presenterMid];
-
 /**
  * Mirrors the real player: one 60fps broadcast clock drives the pose cycle,
  * the caption line, the bullet reveals and the camera drift — nothing is clicked.
@@ -158,32 +153,8 @@ function HeroPreview() {
 
           {/* two-column broadcast: presenter left, lesson right */}
           <div className="relative grid h-full grid-cols-[26%_1fr] gap-3 p-4 sm:gap-5 sm:p-6">
-            <div className="relative self-end overflow-hidden rounded-2xl ring-1 ring-border/70">
-              <img
-                src={pose}
-                alt="Studly presenter delivering the lesson"
-                width={768}
-                height={1024}
-                className="size-full object-cover object-top"
-                style={{
-                  transform: `translateY(${Math.sin(f / 34) * 2}px)`,
-                  filter: blinking ? "brightness(0.94)" : undefined,
-                }}
-              />
-              <span className="absolute left-1.5 top-1.5 rounded-full bg-destructive/85 px-1.5 py-0.5 text-[0.55rem] font-bold uppercase tracking-widest text-white">
-                On air
-              </span>
-              {/* live waveform */}
-              <div className="absolute inset-x-0 bottom-0 flex items-end justify-center gap-0.5 bg-gradient-to-t from-black/70 to-transparent p-1.5">
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <span
-                    key={i}
-                    className="w-0.5 rounded-full bg-primary"
-                    style={{ height: `${4 + Math.abs(Math.sin((f + i * 5) / 4)) * 10}px` }}
-                  />
-                ))}
-              </div>
-            </div>
+            {/* Same broadcast anchor component as the player, so the demo motion matches. */}
+            <PresenterStage frames={{}} name="Susu" speaking frame={tick} className="aspect-[3/4] self-end" />
 
             <div className="flex flex-col justify-center gap-2">
               <p className="text-[0.6rem] font-semibold uppercase tracking-widest text-primary sm:text-xs">
