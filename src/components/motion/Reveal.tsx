@@ -168,16 +168,20 @@ export function MaskReveal({
 }) {
   const hidden =
     from === "left"
-      ? "inset(0 100% 0 0)"
+      ? { clipPath: "inset(0% 100% 0% 0%)", opacity: 0, x: -18, y: 0 }
       : from === "right"
-        ? "inset(0 0 0 100%)"
-        : "inset(100% 0 0 0)";
+        ? { clipPath: "inset(0% 0% 0% 100%)", opacity: 0, x: 18, y: 0 }
+        : { clipPath: "inset(100% 0% 0% 0%)", opacity: 0, x: 0, y: 26 };
 
   return (
     <motion.div
-      initial={{ clipPath: hidden, opacity: 0, y: from === "bottom" ? 26 : 0 }}
-      whileInView={{ clipPath: "inset(0 0 0 0)", opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2, margin: "0px 0px -10% 0px" }}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, amount: 0.2 }}
+      variants={{
+        hidden,
+        show: { clipPath: "inset(0% 0% 0% 0%)", opacity: 1, x: 0, y: 0 },
+      }}
       transition={{ duration: 0.9, delay, ease: MASK_EASE }}
       className={cn(className)}
     >
@@ -215,8 +219,8 @@ export function MaskItem({ children, className }: { children: ReactNode; classNa
   return (
     <motion.div
       variants={{
-        hidden: { clipPath: "inset(100% 0 0 0)", opacity: 0, y: 24 },
-        show: { clipPath: "inset(0 0 0 0)", opacity: 1, y: 0 },
+        hidden: { clipPath: "inset(100% 0% 0% 0%)", opacity: 0, y: 24 },
+        show: { clipPath: "inset(0% 0% 0% 0%)", opacity: 1, y: 0 },
       }}
       transition={{ duration: 0.85, ease: MASK_EASE }}
       className={cn(className)}
