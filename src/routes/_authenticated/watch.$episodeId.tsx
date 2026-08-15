@@ -602,6 +602,10 @@ function PlayerStage({
     return out;
   }, [bullets, slide]);
   const script = useMemo(() => scriptLines.map((l) => l.text).join(". "), [scriptLines]);
+  /** Read by the seek handler, which runs outside render. */
+  const scriptRef = useRef(script);
+  scriptRef.current = script;
+
 
   /** Character offset the voice has reached, so subtitles follow the words actually being read. */
   const [spokenChar, setSpokenChar] = useState(0);
