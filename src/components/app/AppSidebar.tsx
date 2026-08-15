@@ -39,7 +39,7 @@ const NAV: NavItem[] = [
   { key: "home", label: "Home", icon: LayoutGrid, to: "/home" },
   { key: "episodes", label: "Episodes", icon: ListChecks, to: "/episodes" },
   { key: "flashcards", label: "Flashcards", icon: Layers, to: "/flashcards" },
-  { key: "create", label: "Create", icon: PlusCircle, to: "/create" },
+  { key: "create", label: "Create", icon: Clapperboard, to: "/create" },
   { key: "cast", label: "Cast", icon: Users, to: "/cast" },
   { key: "leagues", label: "Leagues", icon: Trophy, to: "/leagues" },
   { key: "profile", label: "Profile", icon: User, to: "/profile" },
