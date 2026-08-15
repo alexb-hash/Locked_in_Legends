@@ -326,7 +326,11 @@ function PlayerStage({
   const [rate, setRate] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   const [uiVisible, setUiVisible] = useState(true);
+  const [captionsOn, setCaptionsOn] = useState(true);
+  const [scrubbing, setScrubbing] = useState(false);
   const hideTimer = useRef<number | null>(null);
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const pendingElapsed = useRef<number | null>(null);
 
   const slide = slides[index];
   const durations = useMemo(() => slides.map(slideDuration), [slides]);
@@ -335,12 +339,45 @@ function PlayerStage({
   const before = durations.slice(0, index).reduce((a, b) => a + b, 0);
   const bullets = asStrings(slide?.bullets);
 
-  // Reset the playhead whenever the cut changes.
+  // Reset the playhead whenever the cut changes (unless we scrubbed into it).
   useEffect(() => {
-    setElapsed(0);
+    setElapsed(pendingElapsed.current ?? 0);
+    pendingElapsed.current = null;
   }, [index]);
 
-  const active = playing && !paused && slides.length > 0;
+  /** Seek anywhere on the runtime, like dragging a video scrubber. */
+  const seekToMs = useCallback(
+    (ms: number) => {
+      const clamped = Math.max(0, Math.min(totalMs - 1, ms));
+      let acc = 0;
+      for (let i = 0; i < durations.length; i += 1) {
+        const d = durations[i]!;
+        if (clamped < acc + d || i === durations.length - 1) {
+          const within = clamped - acc;
+          if (i === index) setElapsed(within);
+          else {
+            pendingElapsed.current = within;
+            onSeek(i);
+          }
+          return;
+        }
+        acc += d;
+      }
+    },
+    [durations, index, onSeek, totalMs],
+  );
+
+  const seekFromPointer = useCallback(
+    (clientX: number) => {
+      const rect = barRef.current?.getBoundingClientRect();
+      if (!rect || rect.width === 0) return;
+      seekToMs(((clientX - rect.left) / rect.width) * totalMs);
+    },
+    [seekToMs, totalMs],
+  );
+
+  const active = playing && !paused && !scrubbing && slides.length > 0;
+
 
   useEffect(() => {
     if (!active) return;
