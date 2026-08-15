@@ -298,6 +298,10 @@ function slideDuration(slide: Slide | undefined) {
   return Math.min(26000, Math.max(6500, 2600 + words * 380));
 }
 
+/** Broadcast frame rate: 24fps, i.e. one frame every ~41.67ms. */
+const FPS = 24;
+const FRAME_MS = 1000 / FPS;
+
 function formatTime(ms: number) {
   const s = Math.max(0, Math.round(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
