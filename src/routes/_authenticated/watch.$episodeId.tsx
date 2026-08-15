@@ -752,12 +752,15 @@ function PlayerStage({
       setNarrationDone(true);
     };
     synth.speak(utter);
+    // A pause left over from the scrub (or a paused engine) would swallow the new take.
+    if (synth.paused) synth.resume();
     return () => {
       synth.cancel();
       spokenWord.current = null;
       setSpeaking(false);
     };
-  }, [armed, script, narrationStart, rate, voiceOn]);
+  }, [armed, script, narrationStart, rate, scrubbing, voiceOn]);
+
 
 
   // Pausing suspends the same take rather than cancelling it, so resuming continues mid-sentence.
