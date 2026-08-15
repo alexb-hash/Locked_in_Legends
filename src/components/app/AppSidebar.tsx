@@ -74,7 +74,11 @@ export function AppSidebar() {
     if (hydrated) localStorage.setItem(VISIBILITY_KEY, JSON.stringify(hidden));
   }, [hidden, hydrated]);
 
-  const items = useMemo(() => NAV.filter((item) => !hidden.includes(item.key)), [hidden]);
+  const items = useMemo(
+    () => NAV.filter((item) => item.key !== "create" && !hidden.includes(item.key)),
+    [hidden],
+  );
+
   const initials = (profile?.display_name || profile?.username || "S").slice(0, 2).toUpperCase();
 
   function toggleVisibility(key: string, visible: boolean) {
