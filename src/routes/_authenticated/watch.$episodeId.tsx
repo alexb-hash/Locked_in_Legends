@@ -243,82 +243,345 @@ function WatchPage() {
   }
 
   return (
-    <div className="relative mx-auto w-full max-w-3xl px-5 py-8 sm:px-8">
-      <div className="flex items-center gap-3">
-        <Button asChild variant="ghost" size="icon" className="press rounded-xl">
-          <Link to="/episodes" aria-label="Leave episode">
-            <ArrowLeft className="size-4" />
-          </Link>
-        </Button>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{data?.episode?.title ?? "Episode"}</p>
-          <Progress value={total ? ((index + 1) / total) * 100 : 0} className="mt-2 h-1.5" />
-        </div>
-        <span className="shrink-0 text-xs text-muted-foreground">
-          {Math.min(index + 1, total)}/{total}
-        </span>
-      </div>
-
-      <AnimatePresence mode="wait">
-        <motion.section
-          key={slide?.id ?? index}
-          initial={{ opacity: 0, y: 18, filter: "blur(8px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          exit={{ opacity: 0, y: -12, filter: "blur(6px)" }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-8 rounded-3xl border border-border/60 bg-card/70 p-7 backdrop-blur-xl sm:p-10"
-        >
-          <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{slide?.title ?? "Loading…"}</h1>
-          <ul className="mt-6 space-y-3">
-            {asStrings(slide?.bullets).map((b) => (
-              <li key={b} className="flex gap-3 text-[15px] leading-relaxed text-foreground/90">
-                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
-                {b}
-              </li>
-            ))}
-          </ul>
-          {slide?.takeaway && (
-            <p className="mt-7 rounded-2xl border border-primary/25 bg-primary/10 p-4 text-sm font-medium text-primary">
-              Takeaway · {slide.takeaway}
-            </p>
+    <PlayerStage
+      title={data?.episode?.title ?? "Episode"}
+      slides={slides}
+      index={index}
+      paused={Boolean(quiz)}
+      onSeek={(i) => setIndex(i)}
+      onEnded={advance}
+      quiz={
+        <AnimatePresence>
+          {quiz && (
+            <QuizPopup
+              key={quiz.id}
+              question={quiz}
+              onDone={async (answer, correct, ms) => {
+                await handleAnswer(quiz, answer, correct, ms);
+              }}
+              onClose={() => {
+                setQuiz(null);
+                if (index + 1 < total) setIndex((i) => i + 1);
+                else void finish();
+              }}
+            />
           )}
-        </motion.section>
-      </AnimatePresence>
+        </AnimatePresence>
+      }
+    />
+  );
+}
 
-      <div className="mt-6 flex items-center justify-between">
-        <Button
-          variant="ghost"
-          className="press rounded-2xl"
-          disabled={index === 0}
-          onClick={() => setIndex((i) => Math.max(0, i - 1))}
+/** Runtime for a slide, so playback feels paced like a cut rather than a fixed slideshow. */
+function slideDuration(slide: Slide | undefined) {
+  if (!slide) return 6000;
+  const bullets = asStrings(slide.bullets);
+  const words = (slide.title + " " + bullets.join(" ") + " " + (slide.takeaway ?? "")).trim().split(/\s+/).length;
+  return Math.min(26000, Math.max(6500, 2600 + words * 380));
+}
+
+function formatTime(ms: number) {
+  const s = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+function PlayerStage({
+  title,
+  slides,
+  index,
+  paused,
+  onSeek,
+  onEnded,
+  quiz,
+}: {
+  title: string;
+  slides: Slide[];
+  index: number;
+  paused: boolean;
+  onSeek: (index: number) => void;
+  onEnded: () => void;
+  quiz: React.ReactNode;
+}) {
+  const shellRef = useRef<HTMLDivElement | null>(null);
+  const [playing, setPlaying] = useState(true);
+  const [elapsed, setElapsed] = useState(0);
+  const [rate, setRate] = useState(1);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [uiVisible, setUiVisible] = useState(true);
+  const hideTimer = useRef<number | null>(null);
+
+  const slide = slides[index];
+  const durations = useMemo(() => slides.map(slideDuration), [slides]);
+  const duration = durations[index] ?? 6000;
+  const totalMs = durations.reduce((a, b) => a + b, 0);
+  const before = durations.slice(0, index).reduce((a, b) => a + b, 0);
+  const bullets = asStrings(slide?.bullets);
+
+  // Reset the playhead whenever the cut changes.
+  useEffect(() => {
+    setElapsed(0);
+  }, [index]);
+
+  const active = playing && !paused && slides.length > 0;
+
+  useEffect(() => {
+    if (!active) return;
+    let raf = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const delta = (now - last) * rate;
+      last = now;
+      setElapsed((prev) => {
+        const next = prev + delta;
+        if (next >= duration) {
+          onEnded();
+          return duration;
+        }
+        return next;
+      });
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [active, duration, onEnded, rate]);
+
+  // Reveal bullets in time with the voice-over pacing.
+  const revealed = useMemo(() => {
+    if (bullets.length === 0) return 0;
+    const start = duration * 0.18;
+    const per = (duration * 0.62) / bullets.length;
+    return Math.min(bullets.length, Math.floor(Math.max(0, elapsed - start) / per) + 1);
+  }, [bullets.length, duration, elapsed]);
+
+  const showTakeaway = elapsed > duration * 0.72;
+
+  const nudgeUi = useCallback(() => {
+    setUiVisible(true);
+    if (hideTimer.current) window.clearTimeout(hideTimer.current);
+    hideTimer.current = window.setTimeout(() => setUiVisible(false), 2800);
+  }, []);
+
+  useEffect(() => {
+    nudgeUi();
+    return () => {
+      if (hideTimer.current) window.clearTimeout(hideTimer.current);
+    };
+  }, [nudgeUi]);
+
+  const toggleFullscreen = useCallback(async () => {
+    const el = shellRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await el.requestFullscreen();
+  }, []);
+
+  useEffect(() => {
+    const onChange = () => setFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.code === "Space" || e.key === "k") {
+        e.preventDefault();
+        setPlaying((p) => !p);
+        nudgeUi();
+      } else if (e.key === "ArrowRight") {
+        onEnded();
+        nudgeUi();
+      } else if (e.key === "ArrowLeft") {
+        onSeek(Math.max(0, index - 1));
+        nudgeUi();
+      } else if (e.key === "f") {
+        void toggleFullscreen();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [index, nudgeUi, onEnded, onSeek, toggleFullscreen]);
+
+  return (
+    <div className={cn("relative mx-auto w-full max-w-5xl px-4 py-6 sm:px-8", fullscreen && "max-w-none px-0 py-0")}>
+      {!fullscreen && (
+        <div className="mb-4 flex items-center gap-3">
+          <Button asChild variant="ghost" size="icon" className="press rounded-xl">
+            <Link to="/episodes" aria-label="Leave episode">
+              <ArrowLeft className="size-4" />
+            </Link>
+          </Button>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium">{title}</p>
+            <p className="text-xs text-muted-foreground">
+              Scene {Math.min(index + 1, slides.length)} of {slides.length} · {formatTime(totalMs)} runtime
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div
+        ref={shellRef}
+        onMouseMove={nudgeUi}
+        onClick={nudgeUi}
+        className={cn(
+          "group relative isolate aspect-video w-full overflow-hidden rounded-3xl border border-border/60 bg-[oklch(0.12_0.01_290)] shadow-glow-sm",
+          fullscreen && "h-screen w-screen rounded-none border-0",
+        )}
+      >
+        <Ambience intensity="bold" className="absolute inset-0" />
+
+        <AnimatePresence mode="wait">
+          <motion.section
+            key={slide?.id ?? index}
+            initial={{ opacity: 0, scale: 1.06, filter: "blur(14px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0 flex flex-col justify-center px-[7%] py-[8%]"
+          >
+            <motion.div
+              animate={{ scale: [1, 1.03] }}
+              transition={{ duration: duration / 1000, ease: "linear" }}
+              className="origin-center"
+            >
+              <p className="text-[clamp(0.6rem,1.1vw,0.8rem)] font-semibold uppercase tracking-[0.2em] text-primary">
+                Scene {Math.min(index + 1, slides.length)}
+              </p>
+              <h1 className="mt-3 font-display text-[clamp(1.4rem,3.4vw,2.8rem)] font-bold leading-[1.1] tracking-tight">
+                {slide?.title ?? "Loading…"}
+              </h1>
+              <ul className="mt-[3%] space-y-[1.6%]">
+                {bullets.map((b, i) => (
+                  <motion.li
+                    key={b}
+                    initial={false}
+                    animate={i < revealed ? { opacity: 1, y: 0, filter: "blur(0px)" } : { opacity: 0, y: 14, filter: "blur(6px)" }}
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className="flex gap-3 text-[clamp(0.8rem,1.45vw,1.05rem)] leading-relaxed text-foreground/90"
+                  >
+                    <span className="mt-[0.7em] size-1.5 shrink-0 rounded-full bg-primary" />
+                    {b}
+                  </motion.li>
+                ))}
+              </ul>
+              {slide?.takeaway && (
+                <motion.p
+                  initial={false}
+                  animate={showTakeaway ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+                  transition={{ duration: 0.5 }}
+                  className="mt-[3.5%] inline-block rounded-2xl border border-primary/25 bg-primary/10 p-[1.4%] px-4 text-[clamp(0.75rem,1.3vw,0.95rem)] font-medium text-primary"
+                >
+                  Takeaway · {slide.takeaway}
+                </motion.p>
+              )}
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Controls */}
+        <div
+          className={cn(
+            "absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-4 pb-3 pt-10 transition-opacity duration-300 sm:px-6",
+            uiVisible || !playing ? "opacity-100" : "opacity-0",
+          )}
         >
-          Back
-        </Button>
-        <Button className="press glow-ring h-11 rounded-2xl px-6" onClick={advance}>
-          {index + 1 < total ? "Next slide" : "Finish episode"}
-          <ArrowRight className="ml-1.5 size-4" />
-        </Button>
+          {/* Chapter timeline */}
+          <div className="flex items-end gap-1">
+            {slides.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                aria-label={`Scene ${i + 1}: ${s.title}`}
+                onClick={() => onSeek(i)}
+                style={{ flexGrow: durations[i] }}
+                className="group/chap relative h-4 shrink-0 basis-0 pt-2.5"
+              >
+                <span className="block h-1.5 overflow-hidden rounded-full bg-white/25 transition-all group-hover/chap:h-2">
+                  <span
+                    className="block h-full rounded-full bg-primary"
+                    style={{ width: i < index ? "100%" : i === index ? `${(elapsed / duration) * 100}%` : "0%" }}
+                  />
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-2 flex items-center gap-2 text-white">
+            <button
+              type="button"
+              onClick={() => setPlaying((p) => !p)}
+              aria-label={playing ? "Pause" : "Play"}
+              className="press grid size-10 place-items-center rounded-full bg-white/15 backdrop-blur-md hover:bg-white/25"
+            >
+              {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
+            </button>
+            <button
+              type="button"
+              onClick={() => onSeek(Math.max(0, index - 1))}
+              aria-label="Previous scene"
+              className="press grid size-9 place-items-center rounded-full hover:bg-white/15"
+            >
+              <SkipBack className="size-4" />
+            </button>
+            <button
+              type="button"
+              onClick={onEnded}
+              aria-label="Next scene"
+              className="press grid size-9 place-items-center rounded-full hover:bg-white/15"
+            >
+              <SkipForward className="size-4" />
+            </button>
+            <span className="ml-1 text-xs tabular-nums text-white/80">
+              {formatTime(before + elapsed)} / {formatTime(totalMs)}
+            </span>
+            <span className="ml-auto flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setRate((r) => (r === 1 ? 1.5 : r === 1.5 ? 2 : r === 2 ? 0.75 : 1))}
+                className="press rounded-full bg-white/12 px-2.5 py-1 text-xs font-semibold tabular-nums hover:bg-white/25"
+                aria-label="Playback speed"
+              >
+                {rate}x
+              </button>
+              <button
+                type="button"
+                onClick={() => void toggleFullscreen()}
+                aria-label={fullscreen ? "Exit full screen" : "Full screen"}
+                className="press grid size-9 place-items-center rounded-full hover:bg-white/15"
+              >
+                {fullscreen ? <Minimize className="size-4" /> : <Maximize className="size-4" />}
+              </button>
+            </span>
+          </div>
+        </div>
+
+        {!playing && !paused && (
+          <button
+            type="button"
+            onClick={() => setPlaying(true)}
+            aria-label="Play"
+            className="absolute inset-0 z-10 grid place-items-center bg-background/25 backdrop-blur-[2px]"
+          >
+            <span className="grid size-16 place-items-center rounded-full bg-primary/90 text-primary-foreground shadow-glow-sm">
+              <Play className="size-7" />
+            </span>
+          </button>
+        )}
+
+        {quiz}
       </div>
 
-      <AnimatePresence>
-        {quiz && (
-          <QuizPopup
-            key={quiz.id}
-            question={quiz}
-            onDone={async (answer, correct, ms) => {
-              await handleAnswer(quiz, answer, correct, ms);
-            }}
-            onClose={() => {
-              setQuiz(null);
-              if (index + 1 < total) setIndex((i) => i + 1);
-              else void finish();
-            }}
-          />
-        )}
-      </AnimatePresence>
+      {!fullscreen && (
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          Space to play/pause · ← → to skip scenes · F for full screen
+        </p>
+      )}
     </div>
   );
 }
+
 
 function QuizPopup({
   question,
