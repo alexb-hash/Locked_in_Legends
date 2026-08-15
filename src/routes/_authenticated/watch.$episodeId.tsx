@@ -527,20 +527,17 @@ function PlayerStage({
       >
         <Ambience intensity="bold" className="absolute inset-0" />
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence initial={false}>
           <motion.section
             key={slide?.id ?? index}
-            initial={{ opacity: 0, scale: 1.06, filter: "blur(14px)" }}
+            initial={{ opacity: 0, scale: 1.04, filter: "blur(12px)" }}
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, scale: 1.01, filter: "blur(8px)" }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 flex flex-col justify-center px-[7%] py-[8%]"
           >
-            <motion.div
-              animate={{ scale: [1, 1.03] }}
-              transition={{ duration: duration / 1000, ease: "linear" }}
-              className="origin-center"
-            >
+            <div className="origin-center will-change-transform" style={camera}>
+
               <p className="text-[clamp(0.6rem,1.1vw,0.8rem)] font-semibold uppercase tracking-[0.2em] text-primary">
                 Scene {Math.min(index + 1, slides.length)}
               </p>
