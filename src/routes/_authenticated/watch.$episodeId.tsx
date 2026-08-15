@@ -459,8 +459,12 @@ function PlayerStage({
       } else if (e.key === "ArrowLeft") {
         onSeek(Math.max(0, index - 1));
         nudgeUi();
+      } else if (e.key === "c") {
+        setCaptionsOn((c) => !c);
+        nudgeUi();
       } else if (e.key === "f") {
         void toggleFullscreen();
+
       }
     };
     window.addEventListener("keydown", onKey);
