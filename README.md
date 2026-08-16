@@ -1,6 +1,6 @@
 # What is Studly?
 
-Studly is an AI-powered learning platform that transforms study materials and images of choice into bitesized educational episode with quizzes, flashcard and an xp and leaderboard system.
+Studly is an AI-powered learning platform that transforms study materials and images of choice into bitesized educational episode with quizzes, flashcards and an xp and leaderboard system.
 
 # Vision
 
